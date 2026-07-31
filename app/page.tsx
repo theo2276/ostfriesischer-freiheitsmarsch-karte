@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Map as LeafletMap, Marker, Polyline } from "leaflet";
+import officialRoutes from "./freiheitsmarsch-routes.json";
 
 type Point = { lat: number; lng: number; ele: number; name?: string };
 type Route = {
@@ -12,24 +13,16 @@ type Route = {
   visible: boolean;
   points: Point[];
   activity: "Wandern" | "Laufen" | "Fahrrad";
+  komootId?: string;
+  fullName?: string;
+  day?: string;
+  officialDistance?: number;
+  elevationUp?: number;
+  sourceUrl?: string;
 };
 type Message = { role: "ai" | "user"; text: string };
 
-const seed: Point[] = [
-  { lat: 53.4703, lng: 7.4837, ele: 6, name: "Marktplatz Aurich" },
-  { lat: 53.4793, lng: 7.4632, ele: 8 },
-  { lat: 53.4914, lng: 7.4463, ele: 11, name: "Egelser Wald" },
-  { lat: 53.5052, lng: 7.4688, ele: 7 },
-  { lat: 53.4991, lng: 7.5002, ele: 4, name: "Aussichtspunkt" },
-  { lat: 53.4862, lng: 7.5187, ele: 5 },
-  { lat: 53.4695, lng: 7.5061, ele: 7 },
-  { lat: 53.4703, lng: 7.4837, ele: 6, name: "Marktplatz Aurich" },
-];
-
-const initialRoutes: Route[] = [
-  { id: "freiheitsmarsch", name: "Ostfriesischer Freiheitsmarsch", color: "#f26b3a", width: 5, visible: true, points: seed, activity: "Wandern" },
-  { id: "wald-variante", name: "Waldreiche Variante", color: "#1d806b", width: 4, visible: true, points: seed.map((p, i) => ({ ...p, lat: p.lat + (i > 1 && i < 6 ? .005 : 0), lng: p.lng - (i > 2 && i < 6 ? .008 : 0), ele: p.ele + (i % 3) * 2 })), activity: "Wandern" },
-];
+const initialRoutes = officialRoutes as Route[];
 
 function distance(points: Point[]) {
   let sum = 0;
@@ -81,7 +74,7 @@ export default function Home() {
     let alive = true;
     import("leaflet").then(L => {
       if (!alive || !mapEl.current || mapRef.current) return;
-      const map = L.map(mapEl.current, { zoomControl: false, attributionControl: true }).setView([53.485, 7.483], 13);
+      const map = L.map(mapEl.current, { zoomControl: false, attributionControl: true }).setView([53.4646, 7.4771], 13);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap", maxZoom: 19,
       }).addTo(map);
@@ -109,7 +102,9 @@ export default function Home() {
         line.on("click", () => setActiveId(r.id));
         layersRef.current.lines.push(line);
         if (r.id === activeId) {
+          const markerStep = Math.max(1, Math.ceil(r.points.length / 36));
           r.points.forEach((p, index) => {
+            if (index !== 0 && index !== r.points.length - 1 && index % markerStep !== 0) return;
             const cls = index === 0 ? "waypoint start" : index === r.points.length - 1 ? "waypoint finish" : "waypoint";
             const marker = L.marker([p.lat, p.lng], {
               draggable: true,
@@ -198,7 +193,7 @@ export default function Home() {
   }
 
   function addRoute() {
-    const r: Route = { ...initialRoutes[0], id: `neu-${Date.now()}`, name: "Neue Rundstrecke", color: "#2b71d6", points: seed.map(p => ({ ...p, lat: p.lat - .008, lng: p.lng + .006 })) };
+    const r: Route = { ...active, id: `neu-${Date.now()}`, name: `${active.name} · eigene Variante`, fullName: undefined, sourceUrl: undefined, komootId: undefined, color: "#2b71d6", points: active.points.map(p => ({ ...p, lat: p.lat - .0015, lng: p.lng + .0015 })) };
     setRoutes(rs => [...rs, r]); setActiveId(r.id); setPanel("routes");
   }
 
@@ -276,11 +271,11 @@ export default function Home() {
           </div>
         </section>}
         {panel === "routes" && <section className="routes-panel">
-          <div className="section-heading"><div><span>ROUTEN IN DIESEM PROJEKT</span><strong>{routes.length} Varianten</strong></div><button onClick={addRoute}>＋</button></div>
+          <div className="section-heading"><div><span>OFFIZIELLE STRECKEN 2026</span><strong>{routes.length} Routen</strong></div><button onClick={addRoute}>＋</button></div>
           {routes.map(r => <article key={r.id} onClick={() => setActiveId(r.id)} className={r.id === activeId ? "route-card active" : "route-card"}>
             <button className="visibility" onClick={e => { e.stopPropagation(); setRoutes(rs => rs.map(x => x.id === r.id ? { ...x, visible: !x.visible } : x)); }}>{r.visible ? "●" : "○"}</button>
             <span className="route-swatch" style={{ background: r.color }} />
-            <div><strong>{r.name}</strong><span>{distance(r.points).toFixed(1)} km · {r.points.length} Wegpunkte</span></div>
+            <div><strong>{r.name}</strong><span>{(r.officialDistance ?? distance(r.points)).toFixed(2).replace(".", ",")} km · {r.points.length} GPS-Punkte</span></div>
           </article>)}
           <button className="add-route" onClick={addRoute}>＋ Neue Route erstellen</button>
         </section>}
@@ -307,7 +302,8 @@ export default function Home() {
 
       <aside className={`right-panel ${rightOpen ? "" : "closed"}`}>
         <div className="info-head"><div><span>AKTIVE ROUTE</span><strong>Streckenübersicht</strong></div><button onClick={() => setRightOpen(false)}>×</button></div>
-        <div className="hero-stat"><span>Gesamtlänge</span><strong>{km.toFixed(1).replace(".", ",")} <small>km</small></strong><em>Rundstrecke</em></div>
+        <div className="hero-stat"><span>Gesamtlänge</span><strong>{km.toFixed(1).replace(".", ",")} <small>km</small></strong><em>{active.day ?? "Rundstrecke"}</em></div>
+        {active.fullName && <div className="official-source"><span>OFFIZIELLE VERANSTALTUNGSSTRECKE</span><p>{active.fullName}</p><a href={active.sourceUrl} target="_blank" rel="noreferrer">Original auf Komoot ↗</a></div>}
         <div className="stat-grid">
           <div><Icon>↗</Icon><span>Höhenmeter</span><strong>{Math.round(ascent)} m</strong></div>
           <div><Icon>⌖</Icon><span>Wegpunkte</span><strong>{active.points.length}</strong></div>
