@@ -51,7 +51,7 @@ export default function Home() {
   const fileRef = useRef<HTMLInputElement>(null);
   const modeRef = useRef<"select" | "add" | "delete">("select");
   const activeIdRef = useRef(initialRoutes[0].id);
-  const [routes, setRoutes] = useState<Route[]>(initialRoutes);
+  const [routes, setRoutes] = useState<Route[]>(() => initialRoutes.map((r, i) => ({ ...r, visible: i === 0 })));
   const [activeId, setActiveId] = useState(initialRoutes[0].id);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
@@ -62,6 +62,8 @@ export default function Home() {
   const [panel, setPanel] = useState<"chat" | "routes" | "settings">("chat");
   const [rightOpen, setRightOpen] = useState(true);
   const [aiMode, setAiMode] = useState<"checking" | "openai" | "demo">("checking");
+  const [focusMode, setFocusMode] = useState(false);
+  const [modules, setModules] = useState({ tools: true, assistant: false, stats: true, elevation: true });
   const active = routes.find(r => r.id === activeId) ?? routes[0];
   const km = useMemo(() => distance(active?.points ?? []), [active]);
   const ascent = useMemo(() => (active?.points ?? []).reduce((s, p, i, arr) => s + (i && p.ele > arr[i - 1].ele ? p.ele - arr[i - 1].ele : 0), 0), [active]);
@@ -127,6 +129,17 @@ export default function Home() {
 
   function updateActive(fn: (r: Route) => Route) {
     setRoutes(rs => rs.map(r => r.id === activeId ? fn(r) : r));
+  }
+
+  function selectRoute(id: string) {
+    setActiveId(id);
+    setRoutes(rs => rs.map(r => ({ ...r, visible: r.id === id })));
+    const selected = routes.find(r => r.id === id);
+    if (selected) setTimeout(() => mapRef.current?.fitBounds(selected.points.map(p => [p.lat, p.lng]), { padding: [34, 34] }), 30);
+  }
+
+  function toggleModule(key: keyof typeof modules) {
+    setModules(current => ({ ...current, [key]: !current[key] }));
   }
 
   async function runAI(raw: string) {
@@ -239,18 +252,19 @@ export default function Home() {
   }
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${focusMode ? "focus-mode" : ""} ${focusMode && modules.assistant ? "chat-open" : ""}`}>
       <header>
         <div className="brand"><div className="brand-mark">M</div><div><strong>Marschroute</strong><span>KI-Routenplanung</span></div></div>
         <div className="route-title"><span className="status-dot" /><strong>{active.name}</strong><span className="saved">Gespeichert</span></div>
         <div className="header-actions">
+          <button className="ghost focus-button" onClick={() => { setFocusMode(true); setTimeout(() => mapRef.current?.invalidateSize(), 60); }}><Icon>⛶</Icon> Kartenmodus</button>
           <button className="ghost" onClick={() => fileRef.current?.click()}><Icon>⇧</Icon> Import</button>
           <div className="export-wrap"><button className="primary">Export <span>⌄</span></button><div className="export-menu">{(["gpx", "geojson", "kml", "svg"] as const).map(x => <button key={x} onClick={() => exportFile(x)}>{x.toUpperCase()}</button>)}<button onClick={() => window.print()}>PDF / PNG</button></div></div>
           <input ref={fileRef} hidden type="file" accept=".gpx,.kml,.geojson,.json" onChange={e => importRoute(e.target.files?.[0])} />
         </div>
       </header>
 
-      <aside className="left-panel">
+      <aside className={`left-panel ${focusMode && !modules.assistant ? "focus-hidden" : ""}`}>
         <nav className="tabs">
           <button className={panel === "chat" ? "active" : ""} onClick={() => setPanel("chat")}><Icon>✦</Icon> KI-Chat</button>
           <button className={panel === "routes" ? "active" : ""} onClick={() => setPanel("routes")}><Icon>≋</Icon> Routen <em>{routes.length}</em></button>
@@ -272,7 +286,7 @@ export default function Home() {
         </section>}
         {panel === "routes" && <section className="routes-panel">
           <div className="section-heading"><div><span>OFFIZIELLE STRECKEN 2026</span><strong>{routes.length} Routen</strong></div><button onClick={addRoute}>＋</button></div>
-          {routes.map(r => <article key={r.id} onClick={() => setActiveId(r.id)} className={r.id === activeId ? "route-card active" : "route-card"}>
+          {routes.map(r => <article key={r.id} onClick={() => selectRoute(r.id)} className={r.id === activeId ? "route-card active" : "route-card"}>
             <button className="visibility" onClick={e => { e.stopPropagation(); setRoutes(rs => rs.map(x => x.id === r.id ? { ...x, visible: !x.visible } : x)); }}>{r.visible ? "●" : "○"}</button>
             <span className="route-swatch" style={{ background: r.color }} />
             <div><strong>{r.name}</strong><span>{(r.officialDistance ?? distance(r.points)).toFixed(2).replace(".", ",")} km · {r.points.length} GPS-Punkte</span></div>
@@ -290,38 +304,57 @@ export default function Home() {
 
       <section className="map-area">
         <div ref={mapEl} className="map" />
-        <div className="map-tools">
+        {(!focusMode || modules.tools) && <div className="map-tools">
           <button className={mode === "select" ? "active" : ""} onClick={() => setMode("select")} title="Auswählen">↖</button>
           <button className={mode === "add" ? "active" : ""} onClick={() => setMode("add")} title="Wegpunkt hinzufügen">＋</button>
           <button className={mode === "delete" ? "active" : ""} onClick={() => setMode("delete")} title="Wegpunkt löschen">−</button>
           <button onClick={() => mapRef.current?.fitBounds(active.points.map(p => [p.lat, p.lng]))} title="Route zentrieren">◎</button>
-        </div>
+          {!focusMode && <button onClick={() => { setFocusMode(true); setTimeout(() => mapRef.current?.invalidateSize(), 60); }} title="Karte im ganzen Tab öffnen">⛶</button>}
+        </div>}
+        {focusMode && <div className="workspace-legend">
+          <div className="workspace-head"><div className="brand-mark">M</div><div><span>KARTENARBEITSBEREICH</span><strong>Module & Legende</strong></div><button onClick={() => { setFocusMode(false); setTimeout(() => mapRef.current?.invalidateSize(), 60); }} title="Kartenmodus schließen">×</button></div>
+          <label>Ausgewählte Route
+            <select value={activeId} onChange={e => selectRoute(e.target.value)}>
+              {routes.map(r => <option key={r.id} value={r.id}>{r.name} · {(r.officialDistance ?? distance(r.points)).toFixed(1)} km</option>)}
+            </select>
+          </label>
+          <div className="route-legend-line"><i style={{ background: active.color }} /><span>{active.day ?? "Eigene Route"}</span><b>{active.points.length} Punkte</b></div>
+          <span className="module-label">MODULE EINBLENDEN</span>
+          <div className="module-switches">
+            <button className={modules.tools ? "active" : ""} onClick={() => toggleModule("tools")}><Icon>↖</Icon> Werkzeuge</button>
+            <button className={modules.assistant ? "active" : ""} onClick={() => { toggleModule("assistant"); setPanel("chat"); }}><Icon>✦</Icon> KI-Chat</button>
+            <button className={modules.stats ? "active" : ""} onClick={() => toggleModule("stats")}><Icon>▤</Icon> Statistik</button>
+            <button className={modules.elevation ? "active" : ""} onClick={() => toggleModule("elevation")}><Icon>⌁</Icon> Höhenprofil</button>
+          </div>
+        </div>}
         <div className="map-hint">{mode === "add" ? "In die Karte klicken, um einen Wegpunkt einzufügen" : mode === "delete" ? "Wegpunkt anklicken, um ihn zu löschen" : "Punkte ziehen, um die Route zu bearbeiten"}</div>
         <button className="info-toggle" onClick={() => setRightOpen(v => !v)}>▤</button>
       </section>
 
-      <aside className={`right-panel ${rightOpen ? "" : "closed"}`}>
+      <aside className={`right-panel ${rightOpen ? "" : "closed"} ${focusMode && !modules.stats && !modules.elevation ? "focus-hidden" : ""}`}>
         <div className="info-head"><div><span>AKTIVE ROUTE</span><strong>Streckenübersicht</strong></div><button onClick={() => setRightOpen(false)}>×</button></div>
-        <div className="hero-stat"><span>Gesamtlänge</span><strong>{km.toFixed(1).replace(".", ",")} <small>km</small></strong><em>{active.day ?? "Rundstrecke"}</em></div>
-        {active.fullName && <div className="official-source"><span>OFFIZIELLE VERANSTALTUNGSSTRECKE</span><p>{active.fullName}</p><a href={active.sourceUrl} target="_blank" rel="noreferrer">Original auf Komoot ↗</a></div>}
-        <div className="stat-grid">
+        <div className={focusMode && !modules.stats ? "module-hidden" : ""}>
+          <div className="hero-stat"><span>Gesamtlänge</span><strong>{km.toFixed(1).replace(".", ",")} <small>km</small></strong><em>{active.day ?? "Rundstrecke"}</em></div>
+          {active.fullName && <div className="official-source"><span>OFFIZIELLE VERANSTALTUNGSSTRECKE</span><p>{active.fullName}</p><a href={active.sourceUrl} target="_blank" rel="noreferrer">Original auf Komoot ↗</a></div>}
+          <div className="stat-grid">
           <div><Icon>↗</Icon><span>Höhenmeter</span><strong>{Math.round(ascent)} m</strong></div>
           <div><Icon>⌖</Icon><span>Wegpunkte</span><strong>{active.points.length}</strong></div>
           <div><Icon>☀</Icon><span>Höchster Punkt</span><strong>{Math.max(...active.points.map(p => p.ele))} m</strong></div>
           <div><Icon>⇅</Icon><span>Tiefster Punkt</span><strong>{Math.min(...active.points.map(p => p.ele))} m</strong></div>
-        </div>
-        <div className="times">
+          </div>
+          <div className="times">
           <h3>Geschätzte Zeiten</h3>
           <div><span><Icon>♙</Icon> Gehen</span><strong>{formatTime(km / 4.5)}</strong></div>
           <div><span><Icon>♟</Icon> Laufen</span><strong>{formatTime(km / 9.5)}</strong></div>
           <div><span><Icon>◉</Icon> Fahrrad</span><strong>{formatTime(km / 18)}</strong></div>
+          </div>
         </div>
-        <div className="elevation">
+        <div className={`elevation ${focusMode && !modules.elevation ? "module-hidden" : ""}`}>
           <div className="elevation-head"><div><span>HÖHENPROFIL</span><strong>Sanftes Terrain</strong></div><em>↑ {Math.round(ascent)} m</em></div>
           <div className="chart">{active.points.map((p, i) => <i key={i} style={{ height: `${26 + (p.ele - Math.min(...active.points.map(x => x.ele))) * 6}%` }} />)}</div>
           <div className="chart-labels"><span>0 km</span><span>{(km / 2).toFixed(1)} km</span><span>{km.toFixed(1)} km</span></div>
         </div>
-        <div className="surface">
+        <div className={`surface ${focusMode && !modules.stats ? "module-hidden" : ""}`}>
           <div><span>WEGBESCHAFFENHEIT</span><strong>Gemischt</strong></div>
           <div className="surface-bar"><i /><i /><i /></div>
           <div className="legend"><span><b /> Feldweg 52%</span><span><b /> Waldweg 31%</span><span><b /> Asphalt 17%</span></div>
