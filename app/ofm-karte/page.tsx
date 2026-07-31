@@ -173,7 +173,7 @@ export default function OfmRouteMap() {
 
       <section className="ofm-route-picker" aria-label="Streckenauswahl">
         <div className="ofm-picker-head">
-          <div className="ofm-monogram">OFM</div>
+          <img className="ofm-logo" src="/ofm-logo.png" alt="Ostfriesischer Freiheitsmarsch" />
           <div><span>8. OSTFRIESISCHER FREIHEITSMARSCH</span><strong>Streckenkarte 2026</strong></div>
         </div>
         <div className="ofm-day-switch">
