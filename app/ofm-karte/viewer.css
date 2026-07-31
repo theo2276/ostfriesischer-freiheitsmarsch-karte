@@ -1,0 +1,48 @@
+@import "leaflet/dist/leaflet.css";
+
+.ofm-viewer { --ofm-red:#ca2728;--ofm-ink:#1f1f1d;--ofm-navy:#17243a;--ofm-cream:#f7f1e3;--ofm-gold:#f2d08a;position:fixed;inset:0;overflow:hidden;background:#d9d8d0;color:var(--ofm-ink);font-family:var(--font-manrope),Arial,sans-serif; }
+.ofm-map { position:absolute;inset:0;z-index:1; }
+.ofm-viewer .leaflet-tile { filter:saturate(.5) sepia(.08) contrast(.94) brightness(1.04); }
+.ofm-viewer .leaflet-control-attribution { font-size:8px!important;opacity:.68; }
+.ofm-route-picker,.ofm-info { position:absolute;z-index:500;top:24px;background:rgba(247,241,227,.95);backdrop-filter:blur(18px);border:1px solid rgba(31,31,29,.12);box-shadow:0 16px 45px rgba(23,36,58,.18); }
+.ofm-route-picker { left:24px;width:306px;border-radius:24px;padding:18px; }
+.ofm-picker-head { display:grid;grid-template-columns:48px 1fr;gap:12px;align-items:center;padding-bottom:15px;border-bottom:1px solid rgba(31,31,29,.12); }
+.ofm-monogram { height:48px;display:grid;place-items:center;background:var(--ofm-red);color:#fff8ed;border-radius:14px;font-size:12px;font-weight:800;letter-spacing:.05em; }
+.ofm-picker-head>div:last-child { display:flex;flex-direction:column;gap:4px; }
+.ofm-picker-head span,.ofm-label { color:#7f6d58;font-size:8px;letter-spacing:.12em;font-weight:700; }
+.ofm-picker-head strong { font-size:16px;line-height:1.1;letter-spacing:-.02em; }
+.ofm-day-switch { display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:14px 0; }
+.ofm-day-switch button { display:flex;flex-direction:column;gap:3px;align-items:start;padding:9px 11px;border:1px solid rgba(31,31,29,.12);border-radius:12px;background:rgba(255,255,255,.45);color:#554d43;font-size:11px;font-weight:700; }
+.ofm-day-switch button span { font-size:7px;letter-spacing:.1em;color:#8a7d6d; }
+.ofm-day-switch button.active { background:var(--ofm-navy);border-color:var(--ofm-navy);color:#fff8ed; }
+.ofm-day-switch button.active span { color:var(--ofm-gold); }
+.ofm-distances { display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px; }
+.ofm-distances button { position:relative;display:flex;flex-direction:column;align-items:start;gap:2px;overflow:hidden;padding:10px 10px 10px 14px;border:1px solid rgba(31,31,29,.1);border-radius:12px;background:rgba(255,255,255,.55);color:var(--ofm-ink); }
+.ofm-distances button>i { position:absolute;left:0;top:0;bottom:0;width:4px; }
+.ofm-distances button strong { font-size:17px;letter-spacing:-.03em; }
+.ofm-distances button span { font-size:7px;color:#80766b; }
+.ofm-distances button.active { outline:2px solid var(--ofm-red);outline-offset:-2px;background:#fffaf0; }
+.ofm-legend { display:flex;gap:14px;margin-top:14px;padding-top:13px;border-top:1px solid rgba(31,31,29,.12);font-size:8px;color:#70665a; }
+.ofm-legend span { display:flex;align-items:center;gap:5px; }
+.ofm-legend i { display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ofm-navy); }
+.ofm-legend i.finish { background:var(--ofm-red); }.ofm-legend i.route{width:18px;height:4px;border-radius:4px}
+.ofm-info { right:24px;width:318px;border-radius:24px;padding:22px;transition:transform .25s ease,opacity .25s ease; }
+.ofm-info.closed { transform:translateX(calc(100% + 40px));opacity:0;pointer-events:none; }
+.ofm-close { position:absolute;right:14px;top:12px;border:0;background:transparent;color:#80766b;font-size:22px; }
+.ofm-info h1 { margin:8px 30px 12px 0;font-size:22px;line-height:1.08;letter-spacing:-.04em; }
+.ofm-distance { padding:12px 0 16px;border-bottom:1px solid rgba(31,31,29,.13);color:var(--ofm-red);font-size:36px;font-weight:800;letter-spacing:-.05em; }
+.ofm-distance small { font-size:14px;letter-spacing:0; }
+.ofm-stats { display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(31,31,29,.12);margin:15px 0;border:1px solid rgba(31,31,29,.08);border-radius:13px;overflow:hidden; }
+.ofm-stats div { display:flex;flex-direction:column;gap:4px;background:#fffaf0;padding:10px; }
+.ofm-stats span { color:#827566;font-size:8px; }.ofm-stats strong{font-size:11px}
+.ofm-profile { padding:5px 0 15px;border-bottom:1px solid rgba(31,31,29,.12); }
+.ofm-profile>div:first-child { display:flex;justify-content:space-between;font-size:8px;letter-spacing:.1em;color:#766b5f; }.ofm-profile b{color:var(--ofm-red)}
+.ofm-chart { height:70px;display:flex;align-items:end;gap:1px;margin-top:9px;background:repeating-linear-gradient(to top,rgba(31,31,29,.08) 0,rgba(31,31,29,.08) 1px,transparent 1px,transparent 23px); }
+.ofm-chart i { flex:1;min-height:25%;max-height:100%;background:linear-gradient(var(--ofm-red),#e7b78f);opacity:.9; }
+.ofm-chart-labels { display:flex;justify-content:space-between;color:#8d8277;font-size:7px;margin-top:4px; }
+.ofm-info>a { display:flex;justify-content:space-between;margin-top:15px;padding:12px 14px;border-radius:12px;background:var(--ofm-red);color:white;text-decoration:none;font-size:11px;font-weight:700; }
+.ofm-info>p { margin:12px 3px 0;color:#82776c;font-size:8px;line-height:1.45; }
+.ofm-info-toggle { position:absolute;z-index:490;right:24px;top:24px;width:42px;height:42px;border:0;border-radius:50%;background:var(--ofm-red);color:white;font-family:Georgia,serif;font-size:18px;box-shadow:0 8px 22px rgba(23,36,58,.24); }
+.ofm-marker { display:grid;place-items:center;border:3px solid #fff8ed;border-radius:50%;background:var(--ofm-navy);box-shadow:0 4px 13px rgba(23,36,58,.4);color:white; }
+.ofm-marker.finish { background:var(--ofm-red); }.ofm-marker span{display:grid;place-items:center;width:28px;height:28px;font-size:10px;font-weight:800}
+@media(max-width:760px){.ofm-route-picker{left:10px;top:10px;width:calc(100% - 20px);padding:12px;border-radius:18px}.ofm-picker-head{padding-bottom:10px}.ofm-day-switch{padding:10px 0}.ofm-distances{grid-template-columns:repeat(4,1fr)}.ofm-distances button{padding:8px 4px 8px 9px}.ofm-distances button strong{font-size:14px}.ofm-distances button span{display:none}.ofm-legend{display:none}.ofm-info{right:10px;left:10px;top:auto;bottom:10px;width:auto;max-height:63vh;overflow:auto;border-radius:18px}.ofm-info-toggle{right:12px;top:auto;bottom:12px}.ofm-viewer .leaflet-bottom{bottom:5px}}
