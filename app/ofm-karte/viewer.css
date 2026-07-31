@@ -21,7 +21,8 @@
 .ofm-distances button>i { position:absolute;left:0;top:0;bottom:0;width:4px; }
 .ofm-distances button strong { font-size:17px;letter-spacing:-.03em; }
 .ofm-distances button span { font-size:7px;color:#80766b; }
-.ofm-distances button.active { outline:2px solid var(--ofm-red);outline-offset:-2px;background:#fffaf0; }
+.ofm-distances button.selected { outline:2px solid var(--ofm-navy);outline-offset:-2px;background:#fffaf0; }
+.ofm-distances button.active { outline-color:var(--ofm-red);box-shadow:0 5px 14px rgba(202,39,40,.13); }
 .ofm-legend { display:flex;gap:14px;margin-top:14px;padding-top:13px;border-top:1px solid rgba(31,31,29,.12);font-size:8px;color:#70665a; }
 .ofm-legend span { display:flex;align-items:center;gap:5px; }
 .ofm-legend i { display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ofm-navy); }

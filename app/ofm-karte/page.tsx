@@ -73,11 +73,14 @@ function formatTime(hours: number) {
 export default function OfmRouteMap() {
   const mapNode = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
-  const layers = useRef<{ line?: Polyline; markers: Marker[] }>({ markers: [] });
-  const [activeId, setActiveId] = useState(routes[0].id);
+  const defaultRoute = routes.find(route => route.day === "Samstag" && Math.round(route.officialDistance) === 10) ?? routes[0];
+  const layers = useRef<{ lines: Polyline[]; markers: Marker[] }>({ lines: [], markers: [] });
+  const [activeId, setActiveId] = useState(defaultRoute.id);
+  const [selectedIds, setSelectedIds] = useState<string[]>([defaultRoute.id]);
   const [day, setDay] = useState<"Samstag" | "Sonntag">("Samstag");
   const [infoOpen, setInfoOpen] = useState(true);
-  const active = routes.find(route => route.id === activeId) ?? routes[0];
+  const active = routes.find(route => route.id === activeId) ?? defaultRoute;
+  const selectedRoutes = useMemo(() => routes.filter(route => selectedIds.includes(route.id)), [selectedIds]);
   const available = useMemo(() => routes.filter(route => route.day === day), [day]);
   const minElevation = Math.min(...active.points.map(point => point.ele));
 
@@ -102,15 +105,15 @@ export default function OfmRouteMap() {
     const map = mapRef.current;
     if (!map) return;
     import("leaflet").then(L => {
-      layers.current.line?.remove();
+      layers.current.lines.forEach(line => line.remove());
       layers.current.markers.forEach(marker => marker.remove());
-      const line = L.polyline(active.points.map(point => [point.lat, point.lng]), {
-        color: active.color,
-        weight: 6,
-        opacity: .96,
+      const lines = selectedRoutes.map(route => L.polyline(route.points.map(point => [point.lat, point.lng]), {
+        color: route.color,
+        weight: route.id === active.id ? 7 : 5,
+        opacity: route.id === active.id ? .98 : .78,
         lineCap: "round",
         lineJoin: "round",
-      }).addTo(map);
+      }).addTo(map).bindTooltip(route.name.replace(" · ", " — ")));
       const start = active.points[0];
       const finish = active.points.at(-1) ?? start;
       const markerIcon = (label: string, finishMarker = false) => L.divIcon({
@@ -121,7 +124,8 @@ export default function OfmRouteMap() {
       });
       const startMarker = L.marker([start.lat, start.lng], { icon: markerIcon("S") }).addTo(map).bindTooltip("Start");
       const finishMarker = L.marker([finish.lat, finish.lng], { icon: markerIcon("Z", true) }).addTo(map).bindTooltip("Ziel");
-      const junctionMarkers = junctions.filter(junction => junction.routes.includes(active.name)).map(junction => {
+      const selectedNames = selectedRoutes.map(route => route.name);
+      const junctionMarkers = junctions.filter(junction => junction.routes.some(route => selectedNames.includes(route))).map(junction => {
         const icon = L.divIcon({
           className: "ofm-junction-marker",
           html: "<span>+</span>",
@@ -134,15 +138,31 @@ export default function OfmRouteMap() {
           .bindTooltip(junction.title, { direction: "top", offset: [0, -10] })
           .bindPopup(`<div class="ofm-junction-popup"><span>STRECKENKNOTEN</span><h3>${junction.title}</h3><p>${junction.text}</p><strong>Hier treffen sich:</strong><ul>${routeList}</ul></div>`, { maxWidth: 290 });
       });
-      layers.current = { line, markers: [startMarker, finishMarker, ...junctionMarkers] };
-      map.fitBounds(line.getBounds(), { padding: [38, 38] });
+      layers.current = { lines, markers: [startMarker, finishMarker, ...junctionMarkers] };
+      if (lines.length) map.fitBounds(L.featureGroup(lines).getBounds(), { padding: [38, 38] });
     });
-  }, [active]);
+  }, [active, selectedRoutes]);
 
   function chooseDay(nextDay: "Samstag" | "Sonntag") {
     setDay(nextDay);
-    const first = routes.find(route => route.day === nextDay);
-    if (first) setActiveId(first.id);
+    const tenKm = routes.find(route => route.day === nextDay && Math.round(route.officialDistance) === 10)
+      ?? routes.find(route => route.day === nextDay);
+    if (tenKm) {
+      setActiveId(tenKm.id);
+      setSelectedIds([tenKm.id]);
+    }
+  }
+
+  function toggleRoute(route: ViewerRoute) {
+    if (selectedIds.includes(route.id)) {
+      if (selectedIds.length === 1) return;
+      const remaining = selectedIds.filter(id => id !== route.id);
+      setSelectedIds(remaining);
+      if (activeId === route.id) setActiveId(remaining.at(-1) ?? defaultRoute.id);
+      return;
+    }
+    setSelectedIds(ids => [...ids, route.id]);
+    setActiveId(route.id);
   }
 
   return (
@@ -158,10 +178,15 @@ export default function OfmRouteMap() {
           <button className={day === "Samstag" ? "active" : ""} onClick={() => chooseDay("Samstag")}><span>20. JUNI</span>Samstag</button>
           <button className={day === "Sonntag" ? "active" : ""} onClick={() => chooseDay("Sonntag")}><span>21. JUNI</span>Sonntag</button>
         </div>
-        <span className="ofm-label">STRECKE AUSWÄHLEN</span>
+        <span className="ofm-label">STRECKEN AUSWÄHLEN · MEHRFACHAUSWAHL MÖGLICH</span>
         <div className="ofm-distances">
           {available.map(route => (
-            <button key={route.id} className={route.id === activeId ? "active" : ""} onClick={() => setActiveId(route.id)}>
+            <button
+              key={route.id}
+              className={`${selectedIds.includes(route.id) ? "selected" : ""} ${route.id === activeId ? "active" : ""}`}
+              onClick={() => toggleRoute(route)}
+              aria-pressed={selectedIds.includes(route.id)}
+            >
               <i style={{ background: route.color }} />
               <strong>{Math.round(route.officialDistance)} km</strong>
               <span>{route.points.length} GPS-Punkte</span>
@@ -171,7 +196,7 @@ export default function OfmRouteMap() {
         <div className="ofm-legend">
           <span><i className="start" /> Start</span>
           <span><i className="finish" /> Ziel</span>
-          <span><i className="route" style={{ background: active.color }} /> Strecke</span>
+          <span><i className="route" style={{ background: active.color }} /> Strecken</span>
           <span><i className="junction">+</i> Knoten</span>
         </div>
       </section>
@@ -179,7 +204,7 @@ export default function OfmRouteMap() {
       <button className="ofm-info-toggle" onClick={() => setInfoOpen(open => !open)} aria-label="Streckeninformationen anzeigen">i</button>
       <aside className={`ofm-info ${infoOpen ? "" : "closed"}`}>
         <button className="ofm-close" onClick={() => setInfoOpen(false)}>×</button>
-        <span className="ofm-label">AUSGEWÄHLTE ROUTE</span>
+        <span className="ofm-label">AKTIVE ROUTE · {selectedRoutes.length} EINGEBLENDET</span>
         <h1>{active.name.replace(" · ", " — ")}</h1>
         <div className="ofm-distance">{active.officialDistance.toFixed(2).replace(".", ",")} <small>km</small></div>
         <div className="ofm-stats">
