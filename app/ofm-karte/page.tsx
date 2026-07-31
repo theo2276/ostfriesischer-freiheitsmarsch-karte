@@ -51,9 +51,9 @@ const junctions = [
     routes: ["Samstag · 10 km", "Samstag · 42 km", "Sonntag · 42 km"],
   },
   {
-    lat: 53.454389, lng: 7.432276,
-    title: "Westlicher Sonntagsknoten",
-    text: "Die Sonntagsstrecken über 10, 24 und 42 km verlaufen hier gemeinsam. Danach trennt sich die Führung der Distanzen erneut.",
+    lat: 53.45402, lng: 7.43116,
+    title: "Upstalsboom · Friesische Freiheit",
+    text: "Der Upstalsboom war im Mittelalter Versammlungsort der Abgesandten der friesischen Landesgemeinden und gilt bis heute als Symbol der Friesischen Freiheit. Hier verlaufen die Sonntagsstrecken über 10, 24 und 42 km gemeinsam.",
     routes: ["Sonntag · 10 km", "Sonntag · 24 km", "Sonntag · 42 km"],
   },
   {
