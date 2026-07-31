@@ -204,7 +204,7 @@ export default function OfmRouteMap() {
         </div>
       </section>
 
-      <a className="ofm-admin-link" href="/" aria-label="Admin-Werkzeug öffnen"><span>⚙</span> Admin</a>
+      <a className="ofm-admin-link" href="/admin" aria-label="Admin-Werkzeug öffnen"><span>⚙</span> Admin</a>
       <button className="ofm-info-toggle" onClick={() => setInfoOpen(open => !open)} aria-label="Streckeninformationen anzeigen">i</button>
       <aside className={`ofm-info ${infoOpen ? "" : "closed"}`}>
         <button className="ofm-close" onClick={() => setInfoOpen(false)}>×</button>
