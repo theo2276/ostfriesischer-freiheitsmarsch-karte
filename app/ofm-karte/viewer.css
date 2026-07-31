@@ -28,6 +28,7 @@
 .ofm-legend i { display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ofm-navy); }
 .ofm-legend i.finish { background:var(--ofm-red); }.ofm-legend i.route{width:18px;height:4px;border-radius:4px}
 .ofm-legend i.junction { display:grid;place-items:center;width:13px;height:13px;background:var(--ofm-gold);border:1px solid var(--ofm-navy);color:var(--ofm-navy);font-style:normal;font-size:9px;font-weight:900; }
+.ofm-legend i.landmark { display:grid;place-items:center;width:14px;height:14px;border:2px solid #fff8ed;background:var(--ofm-red);color:white;font-style:normal;font-size:7px;font-weight:900; }
 .ofm-info { right:24px;width:318px;border-radius:24px;padding:22px;transition:transform .25s ease,opacity .25s ease; }
 .ofm-info.closed { transform:translateX(calc(100% + 40px));opacity:0;pointer-events:none; }
 .ofm-close { position:absolute;right:14px;top:12px;border:0;background:transparent;color:#80766b;font-size:22px; }
@@ -49,6 +50,8 @@
 .ofm-marker.finish { background:var(--ofm-red); }.ofm-marker span{display:grid;place-items:center;width:28px;height:28px;font-size:10px;font-weight:800}
 .ofm-junction-marker { display:grid;place-items:center;border:3px solid #fff8ed;border-radius:50%;background:var(--ofm-gold);box-shadow:0 4px 13px rgba(23,36,58,.38);color:var(--ofm-navy);cursor:pointer; }
 .ofm-junction-marker span { display:grid;place-items:center;width:24px;height:24px;font-size:17px;font-weight:900; }
+.ofm-junction-marker.landmark { border-radius:50% 50% 50% 9px;transform:rotate(-45deg);background:var(--ofm-red);border-width:4px;color:white;box-shadow:0 6px 18px rgba(202,39,40,.45); }
+.ofm-junction-marker.landmark span { width:30px;height:30px;transform:rotate(45deg);font-size:13px;letter-spacing:.02em; }
 .ofm-viewer .leaflet-popup-content-wrapper { border-radius:16px;background:#fffaf0;box-shadow:0 12px 35px rgba(23,36,58,.26); }
 .ofm-viewer .leaflet-popup-tip { background:#fffaf0; }
 .ofm-junction-popup { font-family:var(--font-manrope),Arial,sans-serif;color:var(--ofm-ink); }

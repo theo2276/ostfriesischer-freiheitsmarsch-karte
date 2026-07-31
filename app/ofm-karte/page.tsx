@@ -55,6 +55,7 @@ const junctions = [
     title: "Upstalsboom · Friesische Freiheit",
     text: "Der Upstalsboom war im Mittelalter Versammlungsort der Abgesandten der friesischen Landesgemeinden und gilt bis heute als Symbol der Friesischen Freiheit. Hier verlaufen die Sonntagsstrecken über 10, 24 und 42 km gemeinsam.",
     routes: ["Sonntag · 10 km", "Sonntag · 24 km", "Sonntag · 42 km"],
+    landmark: true,
   },
   {
     lat: 53.450675, lng: 7.451423,
@@ -126,17 +127,18 @@ export default function OfmRouteMap() {
       const finishMarker = L.marker([finish.lat, finish.lng], { icon: markerIcon("Z", true) }).addTo(map).bindTooltip("Ziel");
       const selectedNames = selectedRoutes.map(route => route.name);
       const junctionMarkers = junctions.filter(junction => junction.routes.some(route => selectedNames.includes(route))).map(junction => {
+        const isLandmark = "landmark" in junction && junction.landmark;
         const icon = L.divIcon({
-          className: "ofm-junction-marker",
-          html: "<span>+</span>",
-          iconSize: [30, 30],
-          iconAnchor: [15, 15],
+          className: `ofm-junction-marker ${isLandmark ? "landmark" : ""}`,
+          html: `<span>${isLandmark ? "U" : "+"}</span>`,
+          iconSize: isLandmark ? [38, 44] : [30, 30],
+          iconAnchor: isLandmark ? [19, 42] : [15, 15],
         });
         const routeList = junction.routes.map(route => `<li>${route.replace(" · ", " — ")}</li>`).join("");
         return L.marker([junction.lat, junction.lng], { icon })
           .addTo(map)
           .bindTooltip(junction.title, { direction: "top", offset: [0, -10] })
-          .bindPopup(`<div class="ofm-junction-popup"><span>STRECKENKNOTEN</span><h3>${junction.title}</h3><p>${junction.text}</p><strong>Hier treffen sich:</strong><ul>${routeList}</ul></div>`, { maxWidth: 290 });
+          .bindPopup(`<div class="ofm-junction-popup"><span>${isLandmark ? "HISTORISCHER ORT" : "STRECKENKNOTEN"}</span><h3>${junction.title}</h3><p>${junction.text}</p><strong>Hier treffen sich:</strong><ul>${routeList}</ul></div>`, { maxWidth: 290 });
       });
       layers.current = { lines, markers: [startMarker, finishMarker, ...junctionMarkers] };
       if (lines.length) map.fitBounds(L.featureGroup(lines).getBounds(), { padding: [38, 38] });
@@ -198,6 +200,7 @@ export default function OfmRouteMap() {
           <span><i className="finish" /> Ziel</span>
           <span><i className="route" style={{ background: active.color }} /> Strecken</span>
           <span><i className="junction">+</i> Knoten</span>
+          <span><i className="landmark">U</i> Upstalsboom</span>
         </div>
       </section>
 
