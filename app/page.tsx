@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Map as LeafletMap, Marker, Polyline } from "leaflet";
 import officialRoutes from "./freiheitsmarsch-routes.json";
+import { AdminGate } from "./admin-auth";
 
 type Point = { lat: number; lng: number; ele: number; name?: string };
 type Route = {
@@ -251,13 +252,20 @@ export default function Home() {
     });
   }
 
+  async function logoutAdmin() {
+    await fetch("/api/admin-auth", { method: "DELETE" });
+    window.location.href = "/";
+  }
+
   return (
+    <AdminGate>
     <main className={`app-shell ${focusMode ? "focus-mode" : ""} ${focusMode && modules.assistant ? "chat-open" : ""}`}>
       <header>
         <div className="brand"><div className="brand-mark">M</div><div><strong>Marschroute</strong><span>Admin-Routenplanung</span></div><b className="admin-badge">ADMIN</b></div>
         <div className="route-title"><span className="status-dot" /><strong>{active.name}</strong><span className="saved">Gespeichert</span></div>
         <div className="header-actions">
           <a className="ghost app-link" href="/ofm-karte" target="_blank" rel="noreferrer"><Icon>⌖</Icon> Besucherkarte</a>
+          <button className="ghost" onClick={logoutAdmin}>Abmelden</button>
           <button className="ghost focus-button" onClick={() => { setFocusMode(true); setTimeout(() => mapRef.current?.invalidateSize(), 60); }}><Icon>⛶</Icon> Kartenmodus</button>
           <button className="ghost" onClick={() => fileRef.current?.click()}><Icon>⇧</Icon> Import</button>
           <div className="export-wrap"><button className="primary">Export <span>⌄</span></button><div className="export-menu">{(["gpx", "geojson", "kml", "svg"] as const).map(x => <button key={x} onClick={() => exportFile(x)}>{x.toUpperCase()}</button>)}<button onClick={() => window.print()}>PDF / PNG</button></div></div>
@@ -362,5 +370,6 @@ export default function Home() {
         </div>
       </aside>
     </main>
+    </AdminGate>
   );
 }
