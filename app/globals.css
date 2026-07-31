@@ -13,6 +13,7 @@ header { grid-column:1/-1; display:grid; grid-template-columns:330px 1fr auto; a
 .brand>div:last-child { display:flex; flex-direction:column; }
 .brand strong { font:700 17px Georgia,serif; letter-spacing:-.2px; }
 .brand span { font-size:9px; letter-spacing:1.8px; text-transform:uppercase; color:var(--muted); margin-top:2px; }
+.admin-badge { margin-left:auto;padding:4px 7px;border-radius:999px;background:#ca272814;color:#a51e22;font-size:8px;letter-spacing:1px; }
 .route-title { display:flex; justify-content:center; align-items:center; gap:9px; min-width:0; font-size:13px; }
 .route-title strong { max-width:45vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .status-dot { width:7px;height:7px;border-radius:50%;background:#3ca37c;box-shadow:0 0 0 3px #e2f5ed; }
@@ -20,6 +21,7 @@ header { grid-column:1/-1; display:grid; grid-template-columns:330px 1fr auto; a
 .header-actions { display:flex;align-items:center;gap:8px;padding:0 18px; }
 .ghost,.primary { border:0;border-radius:8px;padding:9px 13px;font-size:12px;font-weight:700; }
 .ghost { background:#f3f5f3;color:#415049; }
+.app-link { display:inline-flex;align-items:center;gap:5px;text-decoration:none;white-space:nowrap; }
 .primary { background:var(--green);color:white;min-width:92px; }
 .export-wrap { position:relative; }
 .export-menu { position:absolute; top:100%; right:0; padding:6px; background:white; box-shadow:0 10px 28px #1b34262b; border:1px solid var(--line); border-radius:9px; display:none; width:130px; }
