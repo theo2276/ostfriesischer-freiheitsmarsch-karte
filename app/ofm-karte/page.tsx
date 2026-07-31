@@ -19,6 +19,50 @@ type ViewerRoute = {
 };
 
 const routes = routesData as ViewerRoute[];
+const junctions = [
+  {
+    lat: 53.464499, lng: 7.476757,
+    title: "Zentraler Streckenknoten",
+    text: "Hier treffen alle acht Veranstaltungsstrecken im Start- und Zielbereich zusammen. Achte auf die farbige Beschilderung deiner gewählten Distanz.",
+    routes: routes.map(route => route.name),
+  },
+  {
+    lat: 53.461027, lng: 7.467637,
+    title: "Abzweig der kurzen Strecken",
+    text: "An diesem Knoten teilen und vereinigen sich mehrere 5- und 10-km-Führungen mit den längeren Sonntagsstrecken. Folge hier besonders aufmerksam den Distanzschildern.",
+    routes: ["Samstag · 5 km", "Sonntag · 5 km", "Sonntag · 10 km", "Sonntag · 24 km", "Sonntag · 42 km"],
+  },
+  {
+    lat: 53.456487, lng: 7.460242,
+    title: "Gemeinsamer Südwest-Abschnitt",
+    text: "Mehrere Routen nutzen diesen Abschnitt gemeinsam, bevor sie wieder unterschiedliche Richtungen einschlagen. Gegenverkehr anderer Marschgruppen ist möglich.",
+    routes: ["Samstag · 5 km", "Sonntag · 5 km", "Sonntag · 10 km", "Sonntag · 24 km", "Sonntag · 42 km"],
+  },
+  {
+    lat: 53.461955, lng: 7.476587,
+    title: "Kreuzung der langen Routen",
+    text: "Hier kreuzen sich die 10-km-Samstagsstrecke und beide 42-km-Strecken. Prüfe die Streckenfarbe, bevor du den nächsten Abschnitt beginnst.",
+    routes: ["Samstag · 10 km", "Samstag · 42 km", "Sonntag · 42 km"],
+  },
+  {
+    lat: 53.453393, lng: 7.501930,
+    title: "Östlicher Streckenknoten",
+    text: "Die 10-km-Samstagsrunde sowie die beiden 42-km-Routen treffen hier aufeinander. Die längeren Distanzen führen von diesem Punkt weiter.",
+    routes: ["Samstag · 10 km", "Samstag · 42 km", "Sonntag · 42 km"],
+  },
+  {
+    lat: 53.454389, lng: 7.432276,
+    title: "Westlicher Sonntagsknoten",
+    text: "Die Sonntagsstrecken über 10, 24 und 42 km verlaufen hier gemeinsam. Danach trennt sich die Führung der Distanzen erneut.",
+    routes: ["Sonntag · 10 km", "Sonntag · 24 km", "Sonntag · 42 km"],
+  },
+  {
+    lat: 53.450675, lng: 7.451423,
+    title: "Abzweig 10 / 24 / 42 km",
+    text: "Wichtiger Abzweig der längeren Sonntagsrouten. Orientiere dich an der Ausschilderung für 10, 24 beziehungsweise 42 km.",
+    routes: ["Sonntag · 10 km", "Sonntag · 24 km", "Sonntag · 42 km"],
+  },
+];
 
 function formatTime(hours: number) {
   const h = Math.floor(hours);
@@ -77,7 +121,20 @@ export default function OfmRouteMap() {
       });
       const startMarker = L.marker([start.lat, start.lng], { icon: markerIcon("S") }).addTo(map).bindTooltip("Start");
       const finishMarker = L.marker([finish.lat, finish.lng], { icon: markerIcon("Z", true) }).addTo(map).bindTooltip("Ziel");
-      layers.current = { line, markers: [startMarker, finishMarker] };
+      const junctionMarkers = junctions.filter(junction => junction.routes.includes(active.name)).map(junction => {
+        const icon = L.divIcon({
+          className: "ofm-junction-marker",
+          html: "<span>+</span>",
+          iconSize: [30, 30],
+          iconAnchor: [15, 15],
+        });
+        const routeList = junction.routes.map(route => `<li>${route.replace(" · ", " — ")}</li>`).join("");
+        return L.marker([junction.lat, junction.lng], { icon })
+          .addTo(map)
+          .bindTooltip(junction.title, { direction: "top", offset: [0, -10] })
+          .bindPopup(`<div class="ofm-junction-popup"><span>STRECKENKNOTEN</span><h3>${junction.title}</h3><p>${junction.text}</p><strong>Hier treffen sich:</strong><ul>${routeList}</ul></div>`, { maxWidth: 290 });
+      });
+      layers.current = { line, markers: [startMarker, finishMarker, ...junctionMarkers] };
       map.fitBounds(line.getBounds(), { padding: [38, 38] });
     });
   }, [active]);
@@ -115,6 +172,7 @@ export default function OfmRouteMap() {
           <span><i className="start" /> Start</span>
           <span><i className="finish" /> Ziel</span>
           <span><i className="route" style={{ background: active.color }} /> Strecke</span>
+          <span><i className="junction">+</i> Knoten</span>
         </div>
       </section>
 

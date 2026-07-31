@@ -26,6 +26,7 @@
 .ofm-legend span { display:flex;align-items:center;gap:5px; }
 .ofm-legend i { display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ofm-navy); }
 .ofm-legend i.finish { background:var(--ofm-red); }.ofm-legend i.route{width:18px;height:4px;border-radius:4px}
+.ofm-legend i.junction { display:grid;place-items:center;width:13px;height:13px;background:var(--ofm-gold);border:1px solid var(--ofm-navy);color:var(--ofm-navy);font-style:normal;font-size:9px;font-weight:900; }
 .ofm-info { right:24px;width:318px;border-radius:24px;padding:22px;transition:transform .25s ease,opacity .25s ease; }
 .ofm-info.closed { transform:translateX(calc(100% + 40px));opacity:0;pointer-events:none; }
 .ofm-close { position:absolute;right:14px;top:12px;border:0;background:transparent;color:#80766b;font-size:22px; }
@@ -45,4 +46,14 @@
 .ofm-info-toggle { position:absolute;z-index:490;right:24px;top:24px;width:42px;height:42px;border:0;border-radius:50%;background:var(--ofm-red);color:white;font-family:Georgia,serif;font-size:18px;box-shadow:0 8px 22px rgba(23,36,58,.24); }
 .ofm-marker { display:grid;place-items:center;border:3px solid #fff8ed;border-radius:50%;background:var(--ofm-navy);box-shadow:0 4px 13px rgba(23,36,58,.4);color:white; }
 .ofm-marker.finish { background:var(--ofm-red); }.ofm-marker span{display:grid;place-items:center;width:28px;height:28px;font-size:10px;font-weight:800}
+.ofm-junction-marker { display:grid;place-items:center;border:3px solid #fff8ed;border-radius:50%;background:var(--ofm-gold);box-shadow:0 4px 13px rgba(23,36,58,.38);color:var(--ofm-navy);cursor:pointer; }
+.ofm-junction-marker span { display:grid;place-items:center;width:24px;height:24px;font-size:17px;font-weight:900; }
+.ofm-viewer .leaflet-popup-content-wrapper { border-radius:16px;background:#fffaf0;box-shadow:0 12px 35px rgba(23,36,58,.26); }
+.ofm-viewer .leaflet-popup-tip { background:#fffaf0; }
+.ofm-junction-popup { font-family:var(--font-manrope),Arial,sans-serif;color:var(--ofm-ink); }
+.ofm-junction-popup>span { color:#9a6a21;font-size:8px;letter-spacing:.12em;font-weight:800; }
+.ofm-junction-popup h3 { margin:5px 0 8px;font-size:16px;line-height:1.15; }
+.ofm-junction-popup p { margin:0 0 9px;font-size:10px;line-height:1.5;color:#62594e; }
+.ofm-junction-popup strong { font-size:9px; }
+.ofm-junction-popup ul { margin:5px 0 0;padding-left:16px;font-size:9px;line-height:1.45;color:#74685b; }
 @media(max-width:760px){.ofm-route-picker{left:10px;top:10px;width:calc(100% - 20px);padding:12px;border-radius:18px}.ofm-picker-head{padding-bottom:10px}.ofm-day-switch{padding:10px 0}.ofm-distances{grid-template-columns:repeat(4,1fr)}.ofm-distances button{padding:8px 4px 8px 9px}.ofm-distances button strong{font-size:14px}.ofm-distances button span{display:none}.ofm-legend{display:none}.ofm-info{right:10px;left:10px;top:auto;bottom:10px;width:auto;max-height:63vh;overflow:auto;border-radius:18px}.ofm-info-toggle{right:12px;top:auto;bottom:12px}.ofm-viewer .leaflet-bottom{bottom:5px}}
