@@ -71,6 +71,10 @@ function formatTime(hours: number) {
   return h ? `${h} Std. ${minutes} Min.` : `${minutes} Min.`;
 }
 
+function marketedDistance(route: ViewerRoute) {
+  return route.name.match(/(\d+) km/)?.[1] ?? Math.round(route.officialDistance).toString();
+}
+
 export default function OfmRouteMap() {
   const mapNode = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
@@ -83,7 +87,6 @@ export default function OfmRouteMap() {
   const active = routes.find(route => route.id === activeId) ?? defaultRoute;
   const selectedRoutes = useMemo(() => routes.filter(route => selectedIds.includes(route.id)), [selectedIds]);
   const available = useMemo(() => routes.filter(route => route.day === day), [day]);
-  const minElevation = Math.min(...active.points.map(point => point.ele));
 
   useEffect(() => {
     if (!mapNode.current || mapRef.current) return;
@@ -190,7 +193,7 @@ export default function OfmRouteMap() {
               aria-pressed={selectedIds.includes(route.id)}
             >
               <i style={{ background: route.color }} />
-              <strong>{Math.round(route.officialDistance)} km</strong>
+              <strong>{marketedDistance(route)} km</strong>
               <span>{route.points.length} GPS-Punkte</span>
             </button>
           ))}
@@ -212,15 +215,9 @@ export default function OfmRouteMap() {
         <h1>{active.name.replace(" · ", " — ")}</h1>
         <div className="ofm-distance">{active.officialDistance.toFixed(2).replace(".", ",")} <small>km</small></div>
         <div className="ofm-stats">
-          <div><span>Höhenmeter</span><strong>↑ {active.elevationUp} m</strong></div>
           <div><span>Gehzeit</span><strong>{formatTime(active.officialDistance / 4.5)}</strong></div>
           <div><span>Start</span><strong>{active.fullName.match(/Start: ([\d:]+ Uhr)/)?.[1] ?? "siehe Komoot"}</strong></div>
           <div><span>Profil</span><strong>Leicht · flach</strong></div>
-        </div>
-        <div className="ofm-profile">
-          <div><span>HÖHENPROFIL</span><b>↑ {active.elevationUp} m</b></div>
-          <div className="ofm-chart">{active.points.filter((_, i) => i % Math.max(1, Math.ceil(active.points.length / 70)) === 0).map((point, index) => <i key={index} style={{ height: `${28 + (point.ele - minElevation) * 6}%` }} />)}</div>
-          <div className="ofm-chart-labels"><span>0 km</span><span>{(active.officialDistance / 2).toFixed(1)} km</span><span>{active.officialDistance.toFixed(1)} km</span></div>
         </div>
         <a href={active.sourceUrl} target="_blank" rel="noreferrer">Streckendetails auf Komoot <span>↗</span></a>
         <p>Die Karte dient der Orientierung. Kurzfristige Änderungen und Markierungen vor Ort haben Vorrang.</p>

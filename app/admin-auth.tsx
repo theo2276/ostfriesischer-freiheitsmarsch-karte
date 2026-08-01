@@ -44,7 +44,14 @@ export function AdminGate({ children }: { children: ReactNode }) {
         <p>Bitte gib das Admin-Passwort ein, um Strecken zu bearbeiten.</p>
         {status === "checking" ? <div className="admin-auth-loading">Zugang wird geprüft …</div> : <>
           <label htmlFor="admin-password">Passwort</label>
-          <input id="admin-password" type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} autoFocus />
+          <input
+            id="admin-password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={event => setPassword(event.target.value)}
+            autoFocus
+          />
           {error && <div className="admin-auth-error" role="alert">{error}</div>}
           <button type="submit" disabled={busy}>{busy ? "Wird geprüft …" : "Admin öffnen"}</button>
         </>}

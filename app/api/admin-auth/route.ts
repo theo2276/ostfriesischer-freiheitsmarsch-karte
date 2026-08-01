@@ -4,7 +4,9 @@ const SESSION_VALUE = "ofm-admin-authorized-v1";
 function equalText(left: string, right: string) {
   const length = Math.max(left.length, right.length);
   let difference = left.length ^ right.length;
-  for (let index = 0; index < length; index++) difference |= (left.charCodeAt(index) || 0) ^ (right.charCodeAt(index) || 0);
+  for (let index = 0; index < length; index++) {
+    difference |= (left.charCodeAt(index) || 0) ^ (right.charCodeAt(index) || 0);
+  }
   return difference === 0;
 }
 
@@ -32,16 +34,25 @@ export async function POST(request: Request) {
   const configuredPassword = process.env.ADMIN_PASSWORD;
   const expected = await sessionToken();
   if (!configuredPassword || !expected) return Response.json({ error: "Admin-Zugang ist nicht konfiguriert." }, { status: 503 });
+
   const body = await request.json().catch(() => ({})) as { password?: string };
   if (!equalText(body.password ?? "", configuredPassword)) {
     await new Promise(resolve => setTimeout(resolve, 350));
     return Response.json({ error: "Ungültiges Passwort." }, { status: 401 });
   }
+
   const secure = new URL(request.url).protocol === "https:" ? "; Secure" : "";
-  return Response.json({ authorized: true }, { headers: { "Cache-Control": "no-store", "Set-Cookie": `${COOKIE_NAME}=${expected}; Path=/; HttpOnly; SameSite=Lax; Max-Age=43200${secure}` } });
+  return Response.json({ authorized: true }, {
+    headers: {
+      "Cache-Control": "no-store",
+      "Set-Cookie": `${COOKIE_NAME}=${expected}; Path=/; HttpOnly; SameSite=Lax; Max-Age=43200${secure}`,
+    },
+  });
 }
 
 export async function DELETE(request: Request) {
   const secure = new URL(request.url).protocol === "https:" ? "; Secure" : "";
-  return Response.json({ authorized: false }, { headers: { "Set-Cookie": `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}` } });
+  return Response.json({ authorized: false }, {
+    headers: { "Set-Cookie": `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}` },
+  });
 }

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Map as LeafletMap, Marker, Polyline } from "leaflet";
 import officialRoutes from "../freiheitsmarsch-routes.json";
+import { OfmIcon, type OfmIconName } from "../icons";
 import { AdminGate } from "../admin-auth";
 
 type Point = { lat: number; lng: number; ele: number; name?: string };
@@ -41,8 +42,8 @@ function formatTime(hours: number) {
   return h ? `${h} Std. ${m} Min.` : `${m} Min.`;
 }
 
-function Icon({ children }: { children: React.ReactNode }) {
-  return <span className="icon" aria-hidden="true">{children}</span>;
+function Icon({ name }: { name: OfmIconName }) {
+  return <span className="icon"><OfmIcon name={name} /></span>;
 }
 
 export default function Home() {
@@ -261,26 +262,26 @@ export default function Home() {
     <AdminGate>
     <main className={`app-shell ${focusMode ? "focus-mode" : ""} ${focusMode && modules.assistant ? "chat-open" : ""}`}>
       <header>
-        <div className="brand"><div className="brand-mark">M</div><div><strong>Marschroute</strong><span>Admin-Routenplanung</span></div><b className="admin-badge">ADMIN</b></div>
+        <div className="brand"><div className="brand-mark"><OfmIcon name="logo-figure" size={25} title="Freiheitsmarsch" /></div><div><strong>Marschroute</strong><span>Admin-Routenplanung</span></div><b className="admin-badge">ADMIN</b></div>
         <div className="route-title"><span className="status-dot" /><strong>{active.name}</strong><span className="saved">Gespeichert</span></div>
         <div className="header-actions">
-          <a className="ghost app-link" href="/ofm-karte" target="_blank" rel="noreferrer"><Icon>⌖</Icon> Besucherkarte</a>
+          <a className="ghost app-link" href="/ofm-karte" target="_blank" rel="noreferrer"><Icon name="map" /> Besucherkarte</a>
           <button className="ghost" onClick={logoutAdmin}>Abmelden</button>
-          <button className="ghost focus-button" onClick={() => { setFocusMode(true); setTimeout(() => mapRef.current?.invalidateSize(), 60); }}><Icon>⛶</Icon> Kartenmodus</button>
-          <button className="ghost" onClick={() => fileRef.current?.click()}><Icon>⇧</Icon> Import</button>
-          <div className="export-wrap"><button className="primary">Export <span>⌄</span></button><div className="export-menu">{(["gpx", "geojson", "kml", "svg"] as const).map(x => <button key={x} onClick={() => exportFile(x)}>{x.toUpperCase()}</button>)}<button onClick={() => window.print()}>PDF / PNG</button></div></div>
+          <button className="ghost focus-button" onClick={() => { setFocusMode(true); setTimeout(() => mapRef.current?.invalidateSize(), 60); }}><Icon name="expand" /> Kartenmodus</button>
+          <button className="ghost" onClick={() => fileRef.current?.click()}><Icon name="upload" /> Import</button>
+          <div className="export-wrap"><button className="primary">Export <OfmIcon name="chevron-down" size={14} /></button><div className="export-menu">{(["gpx", "geojson", "kml", "svg"] as const).map(x => <button key={x} onClick={() => exportFile(x)}>{x.toUpperCase()}</button>)}<button onClick={() => window.print()}>PDF / PNG</button></div></div>
           <input ref={fileRef} hidden type="file" accept=".gpx,.kml,.geojson,.json" onChange={e => importRoute(e.target.files?.[0])} />
         </div>
       </header>
 
       <aside className={`left-panel ${focusMode && !modules.assistant ? "focus-hidden" : ""}`}>
         <nav className="tabs">
-          <button className={panel === "chat" ? "active" : ""} onClick={() => setPanel("chat")}><Icon>✦</Icon> KI-Chat</button>
-          <button className={panel === "routes" ? "active" : ""} onClick={() => setPanel("routes")}><Icon>≋</Icon> Routen <em>{routes.length}</em></button>
-          <button className={panel === "settings" ? "active" : ""} onClick={() => setPanel("settings")}><Icon>⚙</Icon> Einstellungen</button>
+          <button className={panel === "chat" ? "active" : ""} onClick={() => setPanel("chat")}><Icon name="compass" /> KI-Chat</button>
+          <button className={panel === "routes" ? "active" : ""} onClick={() => setPanel("routes")}><Icon name="route" /> Routen <em>{routes.length}</em></button>
+          <button className={panel === "settings" ? "active" : ""} onClick={() => setPanel("settings")}><Icon name="map" /> Einstellungen</button>
         </nav>
         {panel === "chat" && <section className="chat-panel">
-          <div className="assistant-head"><div className="ai-avatar">✦</div><div><strong>Routen-Assistent</strong><span><i /> {aiMode === "openai" ? "OpenAI verbunden" : aiMode === "demo" ? "Demo-Modus · Schlüssel nachrüstbar" : "Bereit für Änderungen"}</span></div></div>
+          <div className="assistant-head"><div className="ai-avatar"><OfmIcon name="leaf" size={18} /></div><div><strong>Routen-Assistent</strong><span><i /> {aiMode === "openai" ? "OpenAI verbunden" : aiMode === "demo" ? "Demo-Modus · Schlüssel nachrüstbar" : "Bereit für Änderungen"}</span></div></div>
           <div className="messages">
             {messages.map((m, i) => <div key={i} className={`message ${m.role}`}>{m.text}{m.role === "ai" && i > 0 && <small>Route aktualisiert</small>}</div>)}
             {busy && <div className="message ai typing"><b /><b /><b /></div>}
@@ -295,8 +296,8 @@ export default function Home() {
         </section>}
         {panel === "routes" && <section className="routes-panel">
           <div className="section-heading"><div><span>OFFIZIELLE STRECKEN 2027</span><strong>{routes.length} Routen</strong></div><button onClick={addRoute}>＋</button></div>
-          {routes.map(r => <article key={r.id} onClick={() => selectRoute(r.id)} className={r.id === activeId ? "route-card active" : "route-card"}>
-            <button className="visibility" onClick={e => { e.stopPropagation(); setRoutes(rs => rs.map(x => x.id === r.id ? { ...x, visible: !x.visible } : x)); }}>{r.visible ? "●" : "○"}</button>
+            {routes.map(r => <article key={r.id} onClick={() => selectRoute(r.id)} className={r.id === activeId ? "route-card active" : "route-card"}>
+            <button className="visibility" aria-label={r.visible ? "Route ausblenden" : "Route einblenden"} onClick={e => { e.stopPropagation(); setRoutes(rs => rs.map(x => x.id === r.id ? { ...x, visible: !x.visible } : x)); }}><OfmIcon name={r.visible ? "eye" : "eye-off"} size={15} /></button>
             <span className="route-swatch" style={{ background: r.color }} />
             <div><strong>{r.name}</strong><span>{(r.officialDistance ?? distance(r.points)).toFixed(2).replace(".", ",")} km · {r.points.length} GPS-Punkte</span></div>
           </article>)}
@@ -314,14 +315,14 @@ export default function Home() {
       <section className="map-area">
         <div ref={mapEl} className="map" />
         {(!focusMode || modules.tools) && <div className="map-tools">
-          <button className={mode === "select" ? "active" : ""} onClick={() => setMode("select")} title="Auswählen">↖</button>
-          <button className={mode === "add" ? "active" : ""} onClick={() => setMode("add")} title="Wegpunkt hinzufügen">＋</button>
-          <button className={mode === "delete" ? "active" : ""} onClick={() => setMode("delete")} title="Wegpunkt löschen">−</button>
-          <button onClick={() => mapRef.current?.fitBounds(active.points.map(p => [p.lat, p.lng]))} title="Route zentrieren">◎</button>
-          {!focusMode && <button onClick={() => { setFocusMode(true); setTimeout(() => mapRef.current?.invalidateSize(), 60); }} title="Karte im ganzen Tab öffnen">⛶</button>}
+          <button className={mode === "select" ? "active" : ""} onClick={() => setMode("select")} title="Auswählen"><OfmIcon name="cursor" /></button>
+          <button className={mode === "add" ? "active" : ""} onClick={() => setMode("add")} title="Wegpunkt hinzufügen"><OfmIcon name="plus" /></button>
+          <button className={mode === "delete" ? "active" : ""} onClick={() => setMode("delete")} title="Wegpunkt löschen"><OfmIcon name="delete-point" /></button>
+          <button onClick={() => mapRef.current?.fitBounds(active.points.map(p => [p.lat, p.lng]))} title="Route zentrieren"><OfmIcon name="center" /></button>
+          {!focusMode && <button onClick={() => { setFocusMode(true); setTimeout(() => mapRef.current?.invalidateSize(), 60); }} title="Karte im ganzen Tab öffnen"><OfmIcon name="expand" /></button>}
         </div>}
         {focusMode && <div className="workspace-legend">
-          <div className="workspace-head"><div className="brand-mark">M</div><div><span>KARTENARBEITSBEREICH</span><strong>Module & Legende</strong></div><button onClick={() => { setFocusMode(false); setTimeout(() => mapRef.current?.invalidateSize(), 60); }} title="Kartenmodus schließen">×</button></div>
+          <div className="workspace-head"><div className="brand-mark"><OfmIcon name="logo-figure" size={25} /></div><div><span>KARTENARBEITSBEREICH</span><strong>Module & Legende</strong></div><button onClick={() => { setFocusMode(false); setTimeout(() => mapRef.current?.invalidateSize(), 60); }} title="Kartenmodus schließen"><OfmIcon name="close" /></button></div>
           <label>Ausgewählte Route
             <select value={activeId} onChange={e => selectRoute(e.target.value)}>
               {routes.map(r => <option key={r.id} value={r.id}>{r.name} · {(r.officialDistance ?? distance(r.points)).toFixed(1)} km</option>)}
@@ -330,14 +331,14 @@ export default function Home() {
           <div className="route-legend-line"><i style={{ background: active.color }} /><span>{active.day ?? "Eigene Route"}</span><b>{active.points.length} Punkte</b></div>
           <span className="module-label">MODULE EINBLENDEN</span>
           <div className="module-switches">
-            <button className={modules.tools ? "active" : ""} onClick={() => toggleModule("tools")}><Icon>↖</Icon> Werkzeuge</button>
-            <button className={modules.assistant ? "active" : ""} onClick={() => { toggleModule("assistant"); setPanel("chat"); }}><Icon>✦</Icon> KI-Chat</button>
-            <button className={modules.stats ? "active" : ""} onClick={() => toggleModule("stats")}><Icon>▤</Icon> Statistik</button>
-            <button className={modules.elevation ? "active" : ""} onClick={() => toggleModule("elevation")}><Icon>⌁</Icon> Höhenprofil</button>
+            <button className={modules.tools ? "active" : ""} onClick={() => toggleModule("tools")}><Icon name="cursor" /> Werkzeuge</button>
+            <button className={modules.assistant ? "active" : ""} onClick={() => { toggleModule("assistant"); setPanel("chat"); }}><Icon name="compass" /> KI-Chat</button>
+            <button className={modules.stats ? "active" : ""} onClick={() => toggleModule("stats")}><Icon name="stats" /> Statistik</button>
+            <button className={modules.elevation ? "active" : ""} onClick={() => toggleModule("elevation")}><Icon name="elevation" /> Höhenprofil</button>
           </div>
         </div>}
         <div className="map-hint">{mode === "add" ? "In die Karte klicken, um einen Wegpunkt einzufügen" : mode === "delete" ? "Wegpunkt anklicken, um ihn zu löschen" : "Punkte ziehen, um die Route zu bearbeiten"}</div>
-        <button className="info-toggle" onClick={() => setRightOpen(v => !v)}>▤</button>
+        <button className="info-toggle" onClick={() => setRightOpen(v => !v)} aria-label="Streckenübersicht"><OfmIcon name="stats" /></button>
       </section>
 
       <aside className={`right-panel ${rightOpen ? "" : "closed"} ${focusMode && !modules.stats && !modules.elevation ? "focus-hidden" : ""}`}>
@@ -346,16 +347,16 @@ export default function Home() {
           <div className="hero-stat"><span>Gesamtlänge</span><strong>{km.toFixed(1).replace(".", ",")} <small>km</small></strong><em>{active.day ?? "Rundstrecke"}</em></div>
           {active.fullName && <div className="official-source"><span>OFFIZIELLE VERANSTALTUNGSSTRECKE</span><p>{active.fullName}</p><a href={active.sourceUrl} target="_blank" rel="noreferrer">Original auf Komoot ↗</a></div>}
           <div className="stat-grid">
-          <div><Icon>↗</Icon><span>Höhenmeter</span><strong>{Math.round(ascent)} m</strong></div>
-          <div><Icon>⌖</Icon><span>Wegpunkte</span><strong>{active.points.length}</strong></div>
-          <div><Icon>☀</Icon><span>Höchster Punkt</span><strong>{Math.max(...active.points.map(p => p.ele))} m</strong></div>
-          <div><Icon>⇅</Icon><span>Tiefster Punkt</span><strong>{Math.min(...active.points.map(p => p.ele))} m</strong></div>
+          <div><Icon name="elevation" /><span>Höhenmeter</span><strong>{Math.round(ascent)} m</strong></div>
+          <div><Icon name="pin" /><span>Wegpunkte</span><strong>{active.points.length}</strong></div>
+          <div><Icon name="sun" /><span>Höchster Punkt</span><strong>{Math.max(...active.points.map(p => p.ele))} m</strong></div>
+          <div><Icon name="lowest" /><span>Tiefster Punkt</span><strong>{Math.min(...active.points.map(p => p.ele))} m</strong></div>
           </div>
           <div className="times">
           <h3>Geschätzte Zeiten</h3>
-          <div><span><Icon>♙</Icon> Gehen</span><strong>{formatTime(km / 4.5)}</strong></div>
-          <div><span><Icon>♟</Icon> Laufen</span><strong>{formatTime(km / 9.5)}</strong></div>
-          <div><span><Icon>◉</Icon> Fahrrad</span><strong>{formatTime(km / 18)}</strong></div>
+          <div><span><Icon name="boot" /> Gehen</span><strong>{formatTime(km / 4.5)}</strong></div>
+          <div><span><Icon name="run" /> Laufen</span><strong>{formatTime(km / 9.5)}</strong></div>
+          <div><span><Icon name="bike" /> Fahrrad</span><strong>{formatTime(km / 18)}</strong></div>
           </div>
         </div>
         <div className={`elevation ${focusMode && !modules.elevation ? "module-hidden" : ""}`}>
