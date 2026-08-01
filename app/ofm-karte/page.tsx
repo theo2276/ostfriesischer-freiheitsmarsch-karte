@@ -80,6 +80,7 @@ export default function OfmRouteMap() {
   const mapRef = useRef<LeafletMap | null>(null);
   const defaultRoute = routes.find(route => route.day === "Samstag" && Math.round(route.officialDistance) === 10) ?? routes[0];
   const layers = useRef<{ lines: Polyline[]; markers: Marker[] }>({ lines: [], markers: [] });
+  const [mapReady, setMapReady] = useState(false);
   const [activeId, setActiveId] = useState(defaultRoute.id);
   const [selectedIds, setSelectedIds] = useState<string[]>([defaultRoute.id]);
   const [day, setDay] = useState<"Samstag" | "Sonntag">("Samstag");
@@ -100,6 +101,7 @@ export default function OfmRouteMap() {
       }).addTo(map);
       L.control.zoom({ position: "bottomright" }).addTo(map);
       mapRef.current = map;
+      setMapReady(true);
       setTimeout(() => map.invalidateSize(), 80);
     });
     return () => { mounted = false; };
@@ -146,7 +148,7 @@ export default function OfmRouteMap() {
       layers.current = { lines, markers: [startMarker, finishMarker, ...junctionMarkers] };
       if (lines.length) map.fitBounds(L.featureGroup(lines).getBounds(), { padding: [38, 38] });
     });
-  }, [active, selectedRoutes]);
+  }, [active, selectedRoutes, mapReady]);
 
   function chooseDay(nextDay: "Samstag" | "Sonntag") {
     setDay(nextDay);
