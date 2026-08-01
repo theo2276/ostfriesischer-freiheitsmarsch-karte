@@ -174,7 +174,7 @@ export default function OfmRouteMap() {
       <section className="ofm-route-picker" aria-label="Streckenauswahl">
         <div className="ofm-picker-head">
           <img className="ofm-logo" src="/ofm-logo.png" alt="Ostfriesischer Freiheitsmarsch" />
-          <div><span>8. OSTFRIESISCHER FREIHEITSMARSCH</span><strong>Streckenkarte 2026</strong></div>
+          <div><span>9. OSTFRIESISCHER FREIHEITSMARSCH</span><strong>Streckenkarte 2027</strong></div>
         </div>
         <div className="ofm-day-switch">
           <button className={day === "Samstag" ? "active" : ""} onClick={() => chooseDay("Samstag")}><span>20. JUNI</span>Samstag</button>

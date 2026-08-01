@@ -294,7 +294,7 @@ export default function Home() {
           </div>
         </section>}
         {panel === "routes" && <section className="routes-panel">
-          <div className="section-heading"><div><span>OFFIZIELLE STRECKEN 2026</span><strong>{routes.length} Routen</strong></div><button onClick={addRoute}>＋</button></div>
+          <div className="section-heading"><div><span>OFFIZIELLE STRECKEN 2027</span><strong>{routes.length} Routen</strong></div><button onClick={addRoute}>＋</button></div>
           {routes.map(r => <article key={r.id} onClick={() => selectRoute(r.id)} className={r.id === activeId ? "route-card active" : "route-card"}>
             <button className="visibility" onClick={e => { e.stopPropagation(); setRoutes(rs => rs.map(x => x.id === r.id ? { ...x, visible: !x.visible } : x)); }}>{r.visible ? "●" : "○"}</button>
             <span className="route-swatch" style={{ background: r.color }} />
