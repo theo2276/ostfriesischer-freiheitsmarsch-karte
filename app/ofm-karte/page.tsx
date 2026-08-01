@@ -177,8 +177,8 @@ export default function OfmRouteMap() {
           <div><span>9. OSTFRIESISCHER FREIHEITSMARSCH</span><strong>Streckenkarte 2027</strong></div>
         </div>
         <div className="ofm-day-switch">
-          <button className={day === "Samstag" ? "active" : ""} onClick={() => chooseDay("Samstag")}><span>20. JUNI</span>Samstag</button>
-          <button className={day === "Sonntag" ? "active" : ""} onClick={() => chooseDay("Sonntag")}><span>21. JUNI</span>Sonntag</button>
+          <button className={day === "Samstag" ? "active" : ""} onClick={() => chooseDay("Samstag")}><span>12. JUNI</span>Samstag</button>
+          <button className={day === "Sonntag" ? "active" : ""} onClick={() => chooseDay("Sonntag")}><span>13. JUNI</span>Sonntag</button>
         </div>
         <span className="ofm-label">STRECKEN AUSWÄHLEN · MEHRFACHAUSWAHL MÖGLICH</span>
         <div className="ofm-distances">
