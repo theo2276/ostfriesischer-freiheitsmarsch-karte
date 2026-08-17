@@ -6,6 +6,7 @@ import officialRoutes from "../freiheitsmarsch-routes.json";
 import { OfmIcon, type OfmIconName } from "../icons";
 import { AdminGate } from "../admin-auth";
 import { junctions } from "../junctions";
+import { directionArrowPoints } from "../route-arrows";
 
 type Point = { lat: number; lng: number; ele: number; name?: string };
 type Route = {
@@ -67,6 +68,9 @@ export default function Home() {
   const [junctionPhotos, setJunctionPhotos] = useState<Record<string, string>>({});
   const [junctionBusy, setJunctionBusy] = useState<string | null>(null);
   const [junctionMessage, setJunctionMessage] = useState("");
+  const [directionArrows, setDirectionArrows] = useState(true);
+  const [settingsBusy, setSettingsBusy] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState("");
   const [rightOpen, setRightOpen] = useState(true);
   const [aiMode, setAiMode] = useState<"checking" | "openai" | "demo">("checking");
   const [focusMode, setFocusMode] = useState(false);
@@ -79,6 +83,12 @@ export default function Home() {
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
 
   useEffect(() => { refreshJunctionPhotos(); }, []);
+  useEffect(() => {
+    fetch("/api/map-settings", { cache: "no-store" })
+      .then(response => response.ok ? response.json() : { directionArrows: true })
+      .then(data => setDirectionArrows(data.directionArrows !== false))
+      .catch(() => setDirectionArrows(true));
+  }, []);
 
   useEffect(() => {
     if (!mapEl.current || mapRef.current) return;
@@ -113,6 +123,21 @@ export default function Home() {
         const line = L.polyline(r.points.map(p => [p.lat, p.lng]), { color: r.color, weight: r.width, opacity: r.id === activeId ? .96 : .68, dashArray: r.id === activeId ? undefined : "8 8" }).addTo(map);
         line.on("click", () => setActiveId(r.id));
         layersRef.current.lines.push(line);
+        if (directionArrows) {
+          directionArrowPoints(r.points).forEach(arrow => {
+            const marker = L.marker([arrow.lat, arrow.lng], {
+              interactive: false,
+              keyboard: false,
+              icon: L.divIcon({
+                className: "route-direction-arrow",
+                html: `<span style="transform:rotate(${arrow.angle}deg)">➤</span>`,
+                iconSize: [22, 22],
+                iconAnchor: [11, 11],
+              }),
+            }).addTo(map);
+            layersRef.current.markers.push(marker);
+          });
+        }
         if (r.id === activeId) {
           const markerStep = Math.max(1, Math.ceil(r.points.length / 36));
           r.points.forEach((p, index) => {
@@ -151,7 +176,7 @@ export default function Home() {
         layersRef.current.markers.push(marker);
       });
     });
-  }, [routes, activeId, mode, mapReady, junctionPhotos]);
+  }, [routes, activeId, mode, mapReady, junctionPhotos, directionArrows]);
 
   async function refreshJunctionPhotos() {
     const response = await fetch("/api/junction-photos", { cache: "no-store" }).catch(() => null);
@@ -193,6 +218,26 @@ export default function Home() {
       setJunctionMessage("Das Foto konnte nicht entfernt werden.");
     }
     setJunctionBusy(null);
+  }
+
+  async function saveDirectionArrows(enabled: boolean) {
+    if (settingsBusy) return;
+    const previous = directionArrows;
+    setDirectionArrows(enabled);
+    setSettingsBusy(true);
+    setSettingsMessage("");
+    const response = await fetch("/api/map-settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ directionArrows: enabled }),
+    }).catch(() => null);
+    if (response?.ok) {
+      setSettingsMessage(enabled ? "Weiße Richtungspfeile sind eingeschaltet." : "Richtungspfeile sind ausgeschaltet.");
+    } else {
+      setDirectionArrows(previous);
+      setSettingsMessage("Die Einstellung konnte nicht gespeichert werden.");
+    }
+    setSettingsBusy(false);
   }
 
   function updateActive(fn: (r: Route) => Route) {
@@ -391,6 +436,14 @@ export default function Home() {
           </div>
         </section>}
         {panel === "settings" && <section className="settings-panel">
+          <div className="map-setting-card">
+            <div><span>RICHTUNGSANZEIGE</span><strong>Weiße Streckenpfeile</strong><p>Zeigt auf den farbigen Linien, in welche Richtung die Route verläuft.</p></div>
+            <label className="setting-switch" aria-label="Weiße Richtungspfeile ein- oder ausschalten">
+              <input type="checkbox" checked={directionArrows} disabled={settingsBusy} onChange={event => saveDirectionArrows(event.target.checked)} />
+              <span />
+            </label>
+          </div>
+          {settingsMessage && <div className="settings-message" role="status">{settingsMessage}</div>}
           <label>Aktivität<select value={active.activity} onChange={e => updateActive(r => ({ ...r, activity: e.target.value as Route["activity"] }))}><option>Wandern</option><option>Laufen</option><option>Fahrrad</option></select></label>
           <label>Routenfarbe<input type="color" value={active.color} onChange={e => updateActive(r => ({ ...r, color: e.target.value }))} /></label>
           <label>Linienbreite <b>{active.width}px</b><input type="range" min="2" max="10" value={active.width} onChange={e => updateActive(r => ({ ...r, width: Number(e.target.value) }))} /></label>

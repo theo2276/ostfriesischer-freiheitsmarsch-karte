@@ -59,6 +59,8 @@
 .ofm-junction-marker.landmark span { width:30px;height:30px;transform:rotate(45deg);font-size:13px;letter-spacing:.02em; }
 .ofm-junction-marker.landmark.has-photo span { width:100%;height:100%; }
 .ofm-junction-marker.landmark.has-photo img { transform:scale(1.38); }
+.ofm-viewer .route-direction-arrow { display:grid!important;place-items:center;background:transparent!important;border:0!important;pointer-events:none!important; }
+.ofm-viewer .route-direction-arrow span { display:block;color:#fff;font-size:17px;font-weight:900;line-height:1;text-shadow:0 1px 3px rgba(97,27,27,.8),0 0 2px #611b1b;transform-origin:center; }
 .ofm-viewer .leaflet-popup-content-wrapper { border-radius:16px;background:#fffaf0;box-shadow:0 12px 35px rgba(23,36,58,.26); }
 .ofm-viewer .leaflet-popup-tip { background:#fffaf0; }
 .ofm-junction-popup { font-family:var(--font-manrope),Arial,sans-serif;color:var(--ofm-ink); }

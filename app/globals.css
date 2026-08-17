@@ -111,6 +111,19 @@ header { grid-column:1/-1; display:grid; grid-template-columns:330px 1fr auto; a
 .settings-panel label { display:grid;gap:8px;font-size:11px;font-weight:700; }
 .settings-panel select { border:1px solid var(--line);padding:9px;border-radius:8px;background:white; }
 .settings-panel input[type=color] { width:100%;height:36px;border:1px solid var(--line);border-radius:8px;padding:3px;background:white; }
+.map-setting-card { display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;padding:14px;border:1px solid #dde5e0;border-radius:11px;background:#f8faf8; }
+.map-setting-card>div { display:flex;flex-direction:column;gap:4px; }
+.map-setting-card>div>span { color:#87948d;font-size:7px;letter-spacing:.13em; }
+.map-setting-card strong { font:700 12px Georgia,serif;color:#263b31; }
+.map-setting-card p { margin:0;color:#74827b;font-size:9px;line-height:1.4; }
+.settings-panel .setting-switch { position:relative;display:block;width:42px;height:24px;cursor:pointer; }
+.setting-switch input { position:absolute;opacity:0;pointer-events:none; }
+.setting-switch span { position:absolute;inset:0;border-radius:999px;background:#cbd3ce;transition:.2s;box-shadow:inset 0 0 0 1px #b9c3bd; }
+.setting-switch span:after { content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;box-shadow:0 2px 6px #19312538;transition:.2s; }
+.setting-switch input:checked+span { background:#ca2728;box-shadow:none; }
+.setting-switch input:checked+span:after { transform:translateX(18px); }
+.setting-switch input:disabled+span { opacity:.55;cursor:wait; }
+.settings-message { margin-top:-10px;padding:9px 10px;border-radius:8px;background:#e9f2ed;color:#285743;font-size:9px;line-height:1.4; }
 .map-area { position:relative;min-width:0;background:#e8e8df;overflow:hidden; }
 .map { position:absolute;inset:0;z-index:1; }
 .leaflet-tile { filter:saturate(.58) contrast(.92) brightness(1.03); }
@@ -126,6 +139,8 @@ header { grid-column:1/-1; display:grid; grid-template-columns:330px 1fr auto; a
 .admin-junction-marker.has-photo { background:white;overflow:hidden; }
 .admin-junction-marker.has-photo span { width:100%;height:100%; }
 .admin-junction-marker img { display:block;width:100%;height:100%;object-fit:cover; }
+.route-direction-arrow { display:grid!important;place-items:center;background:transparent!important;border:0!important;pointer-events:none!important; }
+.route-direction-arrow span { display:block;color:#fff;font-size:17px;font-weight:900;line-height:1;text-shadow:0 1px 3px #611b1bcc,0 0 2px #611b1b;transform-origin:center; }
 .map-tools { position:absolute;z-index:500;top:17px;left:17px;display:flex;background:white;padding:4px;border-radius:9px;box-shadow:0 3px 16px #23372b28; }
 .map-tools button { width:34px;height:32px;border:0;border-right:1px solid #e5e8e6;background:white;color:#ca2728;font-size:16px; }
 .map-tools button:last-child { border:0; }.map-tools button.active { background:#ca272814;color:#ca2728;border-radius:6px; }

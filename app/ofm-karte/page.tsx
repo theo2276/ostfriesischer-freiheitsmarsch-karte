@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Map as LeafletMap, Polyline, Marker } from "leaflet";
 import routesData from "../freiheitsmarsch-routes.json";
 import { junctions } from "../junctions";
+import { directionArrowPoints } from "../route-arrows";
 import "./viewer.css";
 
 type Point = { lat: number; lng: number; ele: number; name?: string };
@@ -41,6 +42,7 @@ export default function OfmRouteMap() {
   const [day, setDay] = useState<"Samstag" | "Sonntag">("Samstag");
   const [infoOpen, setInfoOpen] = useState(true);
   const [junctionPhotos, setJunctionPhotos] = useState<Record<string, string>>({});
+  const [directionArrows, setDirectionArrows] = useState(true);
   const active = routes.find(route => route.id === activeId) ?? defaultRoute;
   const selectedRoutes = useMemo(() => routes.filter(route => selectedIds.includes(route.id)), [selectedIds]);
   const available = useMemo(() => routes.filter(route => route.day === day), [day]);
@@ -50,6 +52,13 @@ export default function OfmRouteMap() {
       .then(response => response.ok ? response.json() : { photos: [] })
       .then(data => setJunctionPhotos(Object.fromEntries((data.photos ?? []).map((photo: { id: string; url: string }) => [photo.id, photo.url]))))
       .catch(() => setJunctionPhotos({}));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/map-settings", { cache: "no-store" })
+      .then(response => response.ok ? response.json() : { directionArrows: true })
+      .then(data => setDirectionArrows(data.directionArrows !== false))
+      .catch(() => setDirectionArrows(true));
   }, []);
 
   useEffect(() => {
@@ -83,6 +92,16 @@ export default function OfmRouteMap() {
         lineCap: "round",
         lineJoin: "round",
       }).addTo(map).bindTooltip(route.name.replace(" · ", " — ")));
+      const arrowMarkers = directionArrows ? selectedRoutes.flatMap(route => directionArrowPoints(route.points).map(arrow => L.marker([arrow.lat, arrow.lng], {
+        interactive: false,
+        keyboard: false,
+        icon: L.divIcon({
+          className: "route-direction-arrow",
+          html: `<span style="transform:rotate(${arrow.angle}deg)">➤</span>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        }),
+      }).addTo(map))) : [];
       const start = active.points[0];
       const finish = active.points.at(-1) ?? start;
       const markerIcon = (label: string, finishMarker = false) => L.divIcon({
@@ -109,10 +128,10 @@ export default function OfmRouteMap() {
           .bindTooltip(junction.title, { direction: "top", offset: [0, -10] })
           .bindPopup(`<div class="ofm-junction-popup"><span>${isLandmark ? "HISTORISCHER ORT" : "STRECKENKNOTEN"}</span><h3>${junction.title}</h3><p>${junction.text}</p><strong>Hier treffen sich:</strong><ul>${routeList}</ul></div>`, { maxWidth: 290 });
       });
-      layers.current = { lines, markers: [startMarker, finishMarker, ...junctionMarkers] };
+      layers.current = { lines, markers: [...arrowMarkers, startMarker, finishMarker, ...junctionMarkers] };
       if (lines.length) map.fitBounds(L.featureGroup(lines).getBounds(), { padding: [38, 38] });
     });
-  }, [active, selectedRoutes, mapReady, junctionPhotos]);
+  }, [active, selectedRoutes, mapReady, junctionPhotos, directionArrows]);
 
   function chooseDay(nextDay: "Samstag" | "Sonntag") {
     setDay(nextDay);
