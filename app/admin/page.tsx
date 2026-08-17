@@ -48,7 +48,7 @@ function Icon({ name }: { name: OfmIconName }) {
   return <span className="icon"><OfmIcon name={name} /></span>;
 }
 
-export default function Home() {
+function AdminApp() {
   const mapEl = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const layersRef = useRef<{ lines: Polyline[]; markers: Marker[] }>({ lines: [], markers: [] });
@@ -370,7 +370,6 @@ export default function Home() {
   }
 
   return (
-    <AdminGate>
     <main className={`app-shell ${focusMode ? "focus-mode" : ""} ${focusMode && modules.assistant ? "chat-open" : ""}`}>
       <header>
         <div className="brand"><div className="brand-mark"><OfmIcon name="logo-figure" size={25} title="Freiheitsmarsch" /></div><div><strong>Marschroute</strong><span>Admin-Routenplanung</span></div><b className="admin-badge">ADMIN</b></div>
@@ -511,6 +510,9 @@ export default function Home() {
         </div>
       </aside>
     </main>
-    </AdminGate>
   );
+}
+
+export default function Home() {
+  return <AdminGate><AdminApp /></AdminGate>;
 }

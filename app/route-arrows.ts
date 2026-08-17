@@ -41,7 +41,8 @@ export function directionArrowPoints(points: RoutePoint[]) {
       arrows.push({
         lat: start.lat + (finish.lat - start.lat) * ratio,
         lng: start.lng + (finish.lng - start.lng) * ratio,
-        angle: bearing(start, finish),
+        // The ➤ glyph points east at 0deg, while a compass bearing uses north.
+        angle: bearing(start, finish) - 90,
       });
       target += spacing;
     }
