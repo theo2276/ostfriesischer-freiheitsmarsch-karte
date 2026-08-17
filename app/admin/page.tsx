@@ -5,6 +5,7 @@ import type { Map as LeafletMap, Marker, Polyline } from "leaflet";
 import officialRoutes from "../freiheitsmarsch-routes.json";
 import { OfmIcon, type OfmIconName } from "../icons";
 import { AdminGate } from "../admin-auth";
+import { junctions } from "../junctions";
 
 type Point = { lat: number; lng: number; ele: number; name?: string };
 type Route = {
@@ -54,6 +55,7 @@ export default function Home() {
   const modeRef = useRef<"select" | "add" | "delete">("select");
   const activeIdRef = useRef(initialRoutes[0].id);
   const [routes, setRoutes] = useState<Route[]>(() => initialRoutes.map((r, i) => ({ ...r, visible: i === 0 })));
+  const [mapReady, setMapReady] = useState(false);
   const [activeId, setActiveId] = useState(initialRoutes[0].id);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
@@ -61,7 +63,10 @@ export default function Home() {
   ]);
   const [mode, setMode] = useState<"select" | "add" | "delete">("select");
   const [busy, setBusy] = useState(false);
-  const [panel, setPanel] = useState<"chat" | "routes" | "settings">("chat");
+  const [panel, setPanel] = useState<"chat" | "routes" | "junctions" | "settings">("chat");
+  const [junctionPhotos, setJunctionPhotos] = useState<Record<string, string>>({});
+  const [junctionBusy, setJunctionBusy] = useState<string | null>(null);
+  const [junctionMessage, setJunctionMessage] = useState("");
   const [rightOpen, setRightOpen] = useState(true);
   const [aiMode, setAiMode] = useState<"checking" | "openai" | "demo">("checking");
   const [focusMode, setFocusMode] = useState(false);
@@ -72,6 +77,8 @@ export default function Home() {
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
+
+  useEffect(() => { refreshJunctionPhotos(); }, []);
 
   useEffect(() => {
     if (!mapEl.current || mapRef.current) return;
@@ -89,6 +96,7 @@ export default function Home() {
         }
       });
       mapRef.current = map;
+      setMapReady(true);
       setTimeout(() => map.invalidateSize(), 100);
     });
     return () => { alive = false; };
@@ -126,8 +134,66 @@ export default function Home() {
           });
         }
       });
+      junctions.forEach(junction => {
+        const photo = junctionPhotos[junction.id];
+        const marker = L.marker([junction.lat, junction.lng], {
+          icon: L.divIcon({
+            className: `admin-junction-marker ${junction.landmark ? "landmark" : ""} ${photo ? "has-photo" : ""}`,
+            html: `<span>${photo ? `<img src="${photo}" alt="">` : junction.landmark ? "U" : "+"}</span>`,
+            iconSize: junction.landmark ? [40, 46] : [32, 32],
+            iconAnchor: junction.landmark ? [20, 44] : [16, 16],
+          }),
+        }).addTo(map).bindTooltip(junction.title, { direction: "top", offset: [0, -12] });
+        marker.on("click", () => {
+          setPanel("junctions");
+          setJunctionMessage(`${junction.title} ausgewählt.`);
+        });
+        layersRef.current.markers.push(marker);
+      });
     });
-  }, [routes, activeId, mode]);
+  }, [routes, activeId, mode, mapReady, junctionPhotos]);
+
+  async function refreshJunctionPhotos() {
+    const response = await fetch("/api/junction-photos", { cache: "no-store" }).catch(() => null);
+    const data = response?.ok ? await response.json() : { photos: [] };
+    setJunctionPhotos(Object.fromEntries((data.photos ?? []).map((photo: { id: string; url: string }) => [photo.id, photo.url])));
+  }
+
+  async function uploadJunctionPhoto(id: string, file?: File) {
+    if (!file || junctionBusy) return;
+    setJunctionBusy(id);
+    setJunctionMessage("");
+    const form = new FormData();
+    form.set("id", id);
+    form.set("photo", file);
+    const response = await fetch("/api/junction-photos", { method: "POST", body: form }).catch(() => null);
+    const data = response ? await response.json().catch(() => ({})) : {};
+    if (response?.ok) {
+      setJunctionPhotos(current => ({ ...current, [id]: data.url }));
+      setJunctionMessage("Das Foto wurde gespeichert und ist auf der Besucherkarte sichtbar.");
+    } else {
+      setJunctionMessage(data.error ?? "Das Foto konnte nicht gespeichert werden.");
+    }
+    setJunctionBusy(null);
+  }
+
+  async function removeJunctionPhoto(id: string) {
+    if (junctionBusy) return;
+    setJunctionBusy(id);
+    setJunctionMessage("");
+    const response = await fetch(`/api/junction-photos?id=${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => null);
+    if (response?.ok) {
+      setJunctionPhotos(current => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+      setJunctionMessage("Das Knotenpunktfoto wurde entfernt.");
+    } else {
+      setJunctionMessage("Das Foto konnte nicht entfernt werden.");
+    }
+    setJunctionBusy(null);
+  }
 
   function updateActive(fn: (r: Route) => Route) {
     setRoutes(rs => rs.map(r => r.id === activeId ? fn(r) : r));
@@ -278,6 +344,7 @@ export default function Home() {
         <nav className="tabs">
           <button className={panel === "chat" ? "active" : ""} onClick={() => setPanel("chat")}><Icon name="compass" /> KI-Chat</button>
           <button className={panel === "routes" ? "active" : ""} onClick={() => setPanel("routes")}><Icon name="route" /> Routen <em>{routes.length}</em></button>
+          <button className={panel === "junctions" ? "active" : ""} onClick={() => setPanel("junctions")}><Icon name="pin" /> Knoten <em>{junctions.length}</em></button>
           <button className={panel === "settings" ? "active" : ""} onClick={() => setPanel("settings")}><Icon name="map" /> Einstellungen</button>
         </nav>
         {panel === "chat" && <section className="chat-panel">
@@ -302,6 +369,26 @@ export default function Home() {
             <div><strong>{r.name}</strong><span>{(r.officialDistance ?? distance(r.points)).toFixed(2).replace(".", ",")} km · {r.points.length} GPS-Punkte</span></div>
           </article>)}
           <button className="add-route" onClick={addRoute}>＋ Neue Route erstellen</button>
+        </section>}
+        {panel === "junctions" && <section className="junctions-panel">
+          <div className="section-heading"><div><span>KNOTENPUNKTE & ORTE</span><strong>Markerfotos</strong></div></div>
+          <p className="junction-intro">Lade ein Foto hoch. Es erscheint direkt im kleinen Marker auf der Admin- und Besucherkarte.</p>
+          {junctionMessage && <div className="junction-message" role="status">{junctionMessage}</div>}
+          <div className="junction-list">
+            {junctions.map(junction => <article className="junction-card" key={junction.id} onClick={() => mapRef.current?.setView([junction.lat, junction.lng], 16)}>
+              <div className={`junction-preview ${junction.landmark ? "landmark" : ""}`}>
+                {junctionPhotos[junction.id] ? <img src={junctionPhotos[junction.id]} alt="" /> : <span>{junction.landmark ? "U" : "+"}</span>}
+              </div>
+              <div className="junction-copy"><strong>{junction.title}</strong><span>{junction.landmark ? "Historischer Ort" : "Streckenknoten"}</span></div>
+              <div className="junction-actions" onClick={event => event.stopPropagation()}>
+                <label className="junction-upload">
+                  {junctionBusy === junction.id ? "Speichert …" : junctionPhotos[junction.id] ? "Bild ersetzen" : "Bild hochladen"}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" disabled={Boolean(junctionBusy)} onChange={event => { uploadJunctionPhoto(junction.id, event.target.files?.[0]); event.currentTarget.value = ""; }} />
+                </label>
+                {junctionPhotos[junction.id] && <button className="junction-remove" disabled={Boolean(junctionBusy)} onClick={() => removeJunctionPhoto(junction.id)}>Entfernen</button>}
+              </div>
+            </article>)}
+          </div>
         </section>}
         {panel === "settings" && <section className="settings-panel">
           <label>Aktivität<select value={active.activity} onChange={e => updateActive(r => ({ ...r, activity: e.target.value as Route["activity"] }))}><option>Wandern</option><option>Laufen</option><option>Fahrrad</option></select></label>

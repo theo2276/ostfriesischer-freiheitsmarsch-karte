@@ -52,8 +52,13 @@
 .ofm-marker.finish { background:var(--ofm-red); }.ofm-marker span{display:grid;place-items:center;width:28px;height:28px;font-size:10px;font-weight:800}
 .ofm-junction-marker { display:grid;place-items:center;border:3px solid #fff8ed;border-radius:50%;background:var(--ofm-gold);box-shadow:0 4px 13px rgba(23,36,58,.38);color:var(--ofm-navy);cursor:pointer; }
 .ofm-junction-marker span { display:grid;place-items:center;width:24px;height:24px;font-size:17px;font-weight:900; }
+.ofm-junction-marker.has-photo { overflow:hidden;background:#fff8ed; }
+.ofm-junction-marker.has-photo span { width:100%;height:100%;overflow:hidden; }
+.ofm-junction-marker.has-photo img { display:block;width:100%;height:100%;object-fit:cover; }
 .ofm-junction-marker.landmark { border-radius:50% 50% 50% 9px;transform:rotate(-45deg);background:var(--ofm-red);border-width:4px;color:white;box-shadow:0 6px 18px rgba(202,39,40,.45); }
 .ofm-junction-marker.landmark span { width:30px;height:30px;transform:rotate(45deg);font-size:13px;letter-spacing:.02em; }
+.ofm-junction-marker.landmark.has-photo span { width:100%;height:100%; }
+.ofm-junction-marker.landmark.has-photo img { transform:scale(1.38); }
 .ofm-viewer .leaflet-popup-content-wrapper { border-radius:16px;background:#fffaf0;box-shadow:0 12px 35px rgba(23,36,58,.26); }
 .ofm-viewer .leaflet-popup-tip { background:#fffaf0; }
 .ofm-junction-popup { font-family:var(--font-manrope),Arial,sans-serif;color:var(--ofm-ink); }
