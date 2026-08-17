@@ -1,4 +1,4 @@
-import { del, list, put } from "@vercel/blob";
+import { del, get, put } from "@vercel/blob";
 import { junctions as defaultJunctions, type Junction } from "./junctions";
 
 const STATE_PATH = "ofm/map-state.json";
@@ -30,12 +30,9 @@ export function storageConfigured() {
 export async function readMapState(): Promise<MapState> {
   const blobToken = token();
   if (!blobToken) return defaultState();
-  const { blobs } = await list({ prefix: STATE_PATH, limit: 10, token: blobToken });
-  const stateBlob = blobs.find(blob => blob.pathname === STATE_PATH);
-  if (!stateBlob) return defaultState();
-  const response = await fetch(stateBlob.url, { cache: "no-store" });
-  if (!response.ok) return defaultState();
-  const stored = await response.json() as Partial<MapState>;
+  const result = await get(STATE_PATH, { access: "private", token: blobToken });
+  if (!result || result.statusCode !== 200) return defaultState();
+  const stored = await new Response(result.stream).json() as Partial<MapState>;
   return {
     directionArrows: stored.directionArrows !== false,
     deletedRouteIds: Array.isArray(stored.deletedRouteIds) ? stored.deletedRouteIds : [],
@@ -48,7 +45,7 @@ export async function writeMapState(state: MapState) {
   const blobToken = token();
   if (!blobToken) throw new Error("Vercel Blob ist nicht konfiguriert.");
   await put(STATE_PATH, JSON.stringify(state), {
-    access: "public",
+    access: "private",
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: "application/json",
@@ -68,12 +65,18 @@ export async function storeJunctionPhoto(id: string, photo: File) {
   if (!blobToken) throw new Error("Vercel Blob ist nicht konfiguriert.");
   const extension = photo.type === "image/png" ? "png" : photo.type === "image/webp" ? "webp" : "jpg";
   const blob = await put(`ofm/junctions/${id}-${Date.now()}.${extension}`, photo, {
-    access: "public",
+    access: "private",
     addRandomSuffix: false,
     contentType: photo.type,
     token: blobToken,
   });
-  return blob.url;
+  return blob.pathname;
+}
+
+export async function readStoredPhoto(pathname: string) {
+  const blobToken = token();
+  if (!blobToken) return null;
+  return get(pathname, { access: "private", token: blobToken });
 }
 
 export async function removeStoredPhoto(url?: string) {
