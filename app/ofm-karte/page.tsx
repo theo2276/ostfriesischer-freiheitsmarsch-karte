@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Map as LeafletMap, Polyline, Marker } from "leaflet";
 import routesData from "../freiheitsmarsch-routes.json";
-import { junctions } from "../junctions";
+import { junctions, type Junction } from "../junctions";
 import { directionArrowPoints } from "../route-arrows";
 import "./viewer.css";
 
@@ -20,7 +20,7 @@ type ViewerRoute = {
   points: Point[];
 };
 
-const routes = routesData as ViewerRoute[];
+const officialRoutes = routesData as ViewerRoute[];
 function formatTime(hours: number) {
   const h = Math.floor(hours);
   const minutes = Math.round((hours - h) * 60);
@@ -34,24 +34,53 @@ function marketedDistance(route: ViewerRoute) {
 export default function OfmRouteMap() {
   const mapNode = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
-  const defaultRoute = routes.find(route => route.day === "Samstag" && Math.round(route.officialDistance) === 10) ?? routes[0];
+  const initialDefault = officialRoutes.find(route => route.day === "Samstag" && Math.round(route.officialDistance) === 10) ?? officialRoutes[0];
   const layers = useRef<{ lines: Polyline[]; markers: Marker[] }>({ lines: [], markers: [] });
   const [mapReady, setMapReady] = useState(false);
-  const [activeId, setActiveId] = useState(defaultRoute.id);
-  const [selectedIds, setSelectedIds] = useState<string[]>([defaultRoute.id]);
+  const [routes, setRoutes] = useState<ViewerRoute[]>(officialRoutes);
+  const [junctionItems, setJunctionItems] = useState<Junction[]>(junctions);
+  const [activeId, setActiveId] = useState(initialDefault.id);
+  const [selectedIds, setSelectedIds] = useState<string[]>([initialDefault.id]);
   const [day, setDay] = useState<"Samstag" | "Sonntag">("Samstag");
   const [infoOpen, setInfoOpen] = useState(true);
   const [junctionPhotos, setJunctionPhotos] = useState<Record<string, string>>({});
   const [directionArrows, setDirectionArrows] = useState(true);
+  const defaultRoute = routes.find(route => route.day === "Samstag" && Math.round(route.officialDistance) === 10) ?? routes[0] ?? initialDefault;
   const active = routes.find(route => route.id === activeId) ?? defaultRoute;
-  const selectedRoutes = useMemo(() => routes.filter(route => selectedIds.includes(route.id)), [selectedIds]);
-  const available = useMemo(() => routes.filter(route => route.day === day), [day]);
+  const selectedRoutes = useMemo(() => routes.filter(route => selectedIds.includes(route.id)), [routes, selectedIds]);
+  const available = useMemo(() => routes.filter(route => route.day === day), [routes, day]);
 
   useEffect(() => {
     fetch("/api/junction-photos", { cache: "no-store" })
       .then(response => response.ok ? response.json() : { photos: [] })
       .then(data => setJunctionPhotos(Object.fromEntries((data.photos ?? []).map((photo: { id: string; url: string }) => [photo.id, photo.url]))))
       .catch(() => setJunctionPhotos({}));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/junctions", { cache: "no-store" })
+      .then(response => response.ok ? response.json() : { junctions })
+      .then(data => setJunctionItems(data.junctions ?? junctions))
+      .catch(() => setJunctionItems(junctions));
+    fetch("/api/routes", { cache: "no-store" })
+      .then(response => response.ok ? response.json() : { deletedIds: [] })
+      .then(data => {
+        const deleted = new Set<string>(data.deletedIds ?? []);
+        const remaining = officialRoutes.filter(route => !deleted.has(route.id));
+        if (!remaining.length) return;
+        setRoutes(remaining);
+        const next = remaining.find(route => route.day === "Samstag" && Math.round(route.officialDistance) === 10) ?? remaining[0];
+        setActiveId(currentId => {
+          if (!deleted.has(currentId)) return currentId;
+          setDay(next.day as "Samstag" | "Sonntag");
+          return next.id;
+        });
+        setSelectedIds(ids => {
+          const visible = ids.filter(id => !deleted.has(id));
+          return visible.length ? visible : [next.id];
+        });
+      })
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -113,7 +142,7 @@ export default function OfmRouteMap() {
       const startMarker = L.marker([start.lat, start.lng], { icon: markerIcon("S") }).addTo(map).bindTooltip("Start");
       const finishMarker = L.marker([finish.lat, finish.lng], { icon: markerIcon("Z", true) }).addTo(map).bindTooltip("Ziel");
       const selectedNames = selectedRoutes.map(route => route.name);
-      const junctionMarkers = junctions.filter(junction => junction.routes.some(route => selectedNames.includes(route))).map(junction => {
+      const junctionMarkers = junctionItems.filter(junction => junction.routes.some(route => selectedNames.includes(route))).map(junction => {
         const isLandmark = junction.landmark;
         const photo = junctionPhotos[junction.id];
         const icon = L.divIcon({
@@ -131,7 +160,7 @@ export default function OfmRouteMap() {
       layers.current = { lines, markers: [...arrowMarkers, startMarker, finishMarker, ...junctionMarkers] };
       if (lines.length) map.fitBounds(L.featureGroup(lines).getBounds(), { padding: [38, 38] });
     });
-  }, [active, selectedRoutes, mapReady, junctionPhotos, directionArrows]);
+  }, [active, selectedRoutes, mapReady, junctionPhotos, directionArrows, junctionItems]);
 
   function chooseDay(nextDay: "Samstag" | "Sonntag") {
     setDay(nextDay);

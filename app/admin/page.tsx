@@ -5,7 +5,7 @@ import type { Map as LeafletMap, Marker, Polyline } from "leaflet";
 import officialRoutes from "../freiheitsmarsch-routes.json";
 import { OfmIcon, type OfmIconName } from "../icons";
 import { AdminGate } from "../admin-auth";
-import { junctions } from "../junctions";
+import { junctions, type Junction } from "../junctions";
 import { directionArrowPoints } from "../route-arrows";
 
 type Point = { lat: number; lng: number; ele: number; name?: string };
@@ -66,6 +66,8 @@ function AdminApp() {
   const [busy, setBusy] = useState(false);
   const [panel, setPanel] = useState<"chat" | "routes" | "junctions" | "settings">("chat");
   const [junctionPhotos, setJunctionPhotos] = useState<Record<string, string>>({});
+  const [junctionItems, setJunctionItems] = useState<Junction[]>(junctions);
+  const [selectedJunctionId, setSelectedJunctionId] = useState<string | null>(null);
   const [junctionBusy, setJunctionBusy] = useState<string | null>(null);
   const [junctionMessage, setJunctionMessage] = useState("");
   const [directionArrows, setDirectionArrows] = useState(true);
@@ -82,7 +84,27 @@ function AdminApp() {
   useEffect(() => { modeRef.current = mode; }, [mode]);
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
 
-  useEffect(() => { refreshJunctionPhotos(); }, []);
+  useEffect(() => {
+    refreshJunctionPhotos();
+    fetch("/api/junctions", { cache: "no-store" })
+      .then(response => response.ok ? response.json() : { junctions })
+      .then(data => setJunctionItems(data.junctions ?? junctions))
+      .catch(() => setJunctionItems(junctions));
+    fetch("/api/routes", { cache: "no-store" })
+      .then(response => response.ok ? response.json() : { deletedIds: [] })
+      .then(data => {
+        const deleted = new Set<string>(data.deletedIds ?? []);
+        setRoutes(current => {
+          const remaining = current.filter(route => !deleted.has(route.id));
+          if (remaining.length && deleted.has(activeIdRef.current)) {
+            activeIdRef.current = remaining[0].id;
+            setActiveId(remaining[0].id);
+          }
+          return remaining.length ? remaining : current;
+        });
+      })
+      .catch(() => undefined);
+  }, []);
   useEffect(() => {
     fetch("/api/map-settings", { cache: "no-store" })
       .then(response => response.ok ? response.json() : { directionArrows: true })
@@ -159,9 +181,10 @@ function AdminApp() {
           });
         }
       });
-      junctions.forEach(junction => {
+      junctionItems.forEach(junction => {
         const photo = junctionPhotos[junction.id];
         const marker = L.marker([junction.lat, junction.lng], {
+          draggable: !junction.locked,
           icon: L.divIcon({
             className: `admin-junction-marker ${junction.landmark ? "landmark" : ""} ${photo ? "has-photo" : ""}`,
             html: `<span>${photo ? `<img src="${photo}" alt="">` : junction.landmark ? "U" : "+"}</span>`,
@@ -171,12 +194,18 @@ function AdminApp() {
         }).addTo(map).bindTooltip(junction.title, { direction: "top", offset: [0, -12] });
         marker.on("click", () => {
           setPanel("junctions");
+          setSelectedJunctionId(junction.id);
           setJunctionMessage(`${junction.title} ausgewählt.`);
+        });
+        marker.on("dragend", event => {
+          const position = event.target.getLatLng();
+          setJunctionItems(items => items.map(item => item.id === junction.id ? { ...item, lat: position.lat, lng: position.lng } : item));
+          saveJunction(junction.id, { lat: position.lat, lng: position.lng });
         });
         layersRef.current.markers.push(marker);
       });
     });
-  }, [routes, activeId, mode, mapReady, junctionPhotos, directionArrows]);
+  }, [routes, activeId, mode, mapReady, junctionPhotos, directionArrows, junctionItems]);
 
   async function refreshJunctionPhotos() {
     const response = await fetch("/api/junction-photos", { cache: "no-store" }).catch(() => null);
@@ -218,6 +247,67 @@ function AdminApp() {
       setJunctionMessage("Das Foto konnte nicht entfernt werden.");
     }
     setJunctionBusy(null);
+  }
+
+  async function saveJunction(id: string, changes: Partial<Pick<Junction, "lat" | "lng" | "locked">>) {
+    const response = await fetch("/api/junctions", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...changes }),
+    }).catch(() => null);
+    if (!response?.ok) {
+      setJunctionMessage("Die Änderung am Knotenpunkt konnte nicht gespeichert werden.");
+      return false;
+    }
+    setJunctionMessage(changes.locked === true ? "Der Knotenpunkt ist jetzt fixiert." : changes.locked === false ? "Der Knotenpunkt kann jetzt verschoben werden." : "Die neue Position wurde gespeichert.");
+    return true;
+  }
+
+  async function addJunction() {
+    const center = mapRef.current?.getCenter();
+    if (!center || junctionBusy) return;
+    setJunctionBusy("new");
+    const response = await fetch("/api/junctions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lat: center.lat, lng: center.lng, routes: [active.name] }),
+    }).catch(() => null);
+    const data = response ? await response.json().catch(() => ({})) : {};
+    if (response?.ok && data.junction) {
+      setJunctionItems(items => [...items, data.junction]);
+      setSelectedJunctionId(data.junction.id);
+      setJunctionMessage("Neuer Knotenpunkt angelegt. Ziehe ihn jetzt an die gewünschte Position und fixiere ihn danach.");
+    } else {
+      setJunctionMessage(data.error ?? "Der Knotenpunkt konnte nicht angelegt werden.");
+    }
+    setJunctionBusy(null);
+  }
+
+  async function toggleJunctionLock(junction: Junction) {
+    const locked = !junction.locked;
+    setJunctionItems(items => items.map(item => item.id === junction.id ? { ...item, locked } : item));
+    if (!await saveJunction(junction.id, { locked })) {
+      setJunctionItems(items => items.map(item => item.id === junction.id ? { ...item, locked: junction.locked } : item));
+    }
+  }
+
+  async function deleteRoute(id: string) {
+    if (routes.length <= 1 || settingsBusy) return;
+    const response = await fetch("/api/routes", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    }).catch(() => null);
+    if (!response?.ok) {
+      setSettingsMessage("Die Strecke konnte nicht gelöscht werden.");
+      return;
+    }
+    const remaining = routes.filter(route => route.id !== id);
+    const next = remaining[0];
+    setRoutes(remaining.map((route, index) => ({ ...route, visible: index === 0 })));
+    setActiveId(next.id);
+    activeIdRef.current = next.id;
+    setSettingsMessage("Die Strecke wurde dauerhaft aus Admin- und Besucherkarte entfernt.");
   }
 
   async function saveDirectionArrows(enabled: boolean) {
@@ -388,7 +478,7 @@ function AdminApp() {
         <nav className="tabs">
           <button className={panel === "chat" ? "active" : ""} onClick={() => setPanel("chat")}><Icon name="compass" /> KI-Chat</button>
           <button className={panel === "routes" ? "active" : ""} onClick={() => setPanel("routes")}><Icon name="route" /> Routen <em>{routes.length}</em></button>
-          <button className={panel === "junctions" ? "active" : ""} onClick={() => setPanel("junctions")}><Icon name="pin" /> Knoten <em>{junctions.length}</em></button>
+          <button className={panel === "junctions" ? "active" : ""} onClick={() => setPanel("junctions")}><Icon name="pin" /> Knoten <em>{junctionItems.length}</em></button>
           <button className={panel === "settings" ? "active" : ""} onClick={() => setPanel("settings")}><Icon name="map" /> Einstellungen</button>
         </nav>
         {panel === "chat" && <section className="chat-panel">
@@ -415,16 +505,17 @@ function AdminApp() {
           <button className="add-route" onClick={addRoute}>＋ Neue Route erstellen</button>
         </section>}
         {panel === "junctions" && <section className="junctions-panel">
-          <div className="section-heading"><div><span>KNOTENPUNKTE & ORTE</span><strong>Markerfotos</strong></div></div>
-          <p className="junction-intro">Lade ein Foto hoch. Es erscheint direkt im kleinen Marker auf der Admin- und Besucherkarte.</p>
+          <div className="section-heading"><div><span>KNOTENPUNKTE & ORTE</span><strong>Marker verwalten</strong></div><button onClick={addJunction} disabled={Boolean(junctionBusy)} title="Knotenpunkt in der Kartenmitte hinzufügen">＋</button></div>
+          <p className="junction-intro">Neue Knoten erscheinen in der Kartenmitte. Solange sie entsperrt sind, kannst du sie direkt auf der Karte ziehen. Anschließend mit „Fixieren“ sperren.</p>
           {junctionMessage && <div className="junction-message" role="status">{junctionMessage}</div>}
           <div className="junction-list">
-            {junctions.map(junction => <article className="junction-card" key={junction.id} onClick={() => mapRef.current?.setView([junction.lat, junction.lng], 16)}>
+            {junctionItems.map(junction => <article className={`junction-card ${selectedJunctionId === junction.id ? "active" : ""}`} key={junction.id} onClick={() => { setSelectedJunctionId(junction.id); mapRef.current?.setView([junction.lat, junction.lng], 16); }}>
               <div className={`junction-preview ${junction.landmark ? "landmark" : ""}`}>
                 {junctionPhotos[junction.id] ? <img src={junctionPhotos[junction.id]} alt="" /> : <span>{junction.landmark ? "U" : "+"}</span>}
               </div>
               <div className="junction-copy"><strong>{junction.title}</strong><span>{junction.landmark ? "Historischer Ort" : "Streckenknoten"}</span></div>
               <div className="junction-actions" onClick={event => event.stopPropagation()}>
+                <button className={`junction-lock ${junction.locked ? "locked" : ""}`} onClick={() => toggleJunctionLock(junction)}>{junction.locked ? "🔒 Fixiert" : "↔ Beweglich"}</button>
                 <label className="junction-upload">
                   {junctionBusy === junction.id ? "Speichert …" : junctionPhotos[junction.id] ? "Bild ersetzen" : "Bild hochladen"}
                   <input type="file" accept="image/jpeg,image/png,image/webp" disabled={Boolean(junctionBusy)} onChange={event => { uploadJunctionPhoto(junction.id, event.target.files?.[0]); event.currentTarget.value = ""; }} />
@@ -435,6 +526,14 @@ function AdminApp() {
           </div>
         </section>}
         {panel === "settings" && <section className="settings-panel">
+          <div className="route-delete-card">
+            <div><span>STRECKENVERWALTUNG</span><strong>Strecke auswählen oder löschen</strong></div>
+            <select value={activeId} onChange={event => selectRoute(event.target.value)}>
+              {routes.map(route => <option key={route.id} value={route.id}>{route.name}</option>)}
+            </select>
+            <button disabled={routes.length <= 1 || settingsBusy} onClick={() => deleteRoute(activeId)}>Ausgewählte Strecke löschen</button>
+            {routes.length <= 1 && <small>Mindestens eine Strecke muss erhalten bleiben.</small>}
+          </div>
           <div className="map-setting-card">
             <div><span>RICHTUNGSANZEIGE</span><strong>Weiße Streckenpfeile</strong><p>Zeigt auf den farbigen Linien, in welche Richtung die Route verläuft.</p></div>
             <label className="setting-switch" aria-label="Weiße Richtungspfeile ein- oder ausschalten">

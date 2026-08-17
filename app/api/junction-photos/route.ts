@@ -1,5 +1,4 @@
 import { isAdminAuthorized } from "../../admin-session";
-import { junctionIds } from "../../junctions";
 import { getMediaBucket } from "../../media";
 
 const PREFIX = "junctions/";
@@ -11,7 +10,7 @@ function keyFor(id: string) {
 }
 
 function validId(id: string | null): id is string {
-  return Boolean(id && junctionIds.has(id));
+  return Boolean(id && /^[a-z0-9-]{3,80}$/i.test(id));
 }
 
 export async function GET(request: Request) {
@@ -37,7 +36,7 @@ export async function GET(request: Request) {
   const version = Date.now();
   const photos = objects.objects
     .map(object => object.key.slice(PREFIX.length))
-    .filter(photoId => junctionIds.has(photoId))
+    .filter(photoId => validId(photoId))
     .map(photoId => ({ id: photoId, url: `/api/junction-photos?id=${encodeURIComponent(photoId)}&v=${version}` }));
   return Response.json({ photos }, { headers: { "Cache-Control": "no-store" } });
 }

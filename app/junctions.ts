@@ -10,6 +10,8 @@ export type Junction = {
   text: string;
   routes: string[];
   landmark?: boolean;
+  locked?: boolean;
+  custom?: boolean;
 };
 
 const routeNames = (routesData as RouteSummary[]).map(route => route.name);
