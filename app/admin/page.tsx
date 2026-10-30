@@ -74,7 +74,7 @@ function AdminApp() {
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [settingsMessage, setSettingsMessage] = useState("");
   const [rightOpen, setRightOpen] = useState(true);
-  const [aiMode, setAiMode] = useState<"checking" | "openai" | "demo">("checking");
+  const [aiMode, setAiMode] = useState<"checking" | "openai" | "gemini" | "demo">("checking");
   const [focusMode, setFocusMode] = useState(false);
   const [modules, setModules] = useState({ tools: true, assistant: false, stats: true, elevation: true });
   const active = routes.find(r => r.id === activeId) ?? routes[0];
@@ -362,7 +362,7 @@ function AdminApp() {
       if (result.configured && result.command) {
         interpreted = result.command;
         apiReply = result.reply ?? "";
-        setAiMode("openai");
+        setAiMode(result.provider === "gemini" ? "gemini" : "openai");
       } else {
         setAiMode("demo");
       }
@@ -482,7 +482,7 @@ function AdminApp() {
           <button className={panel === "settings" ? "active" : ""} onClick={() => setPanel("settings")}><Icon name="map" /> Einstellungen</button>
         </nav>
         {panel === "chat" && <section className="chat-panel">
-          <div className="assistant-head"><div className="ai-avatar"><OfmIcon name="leaf" size={18} /></div><div><strong>Routen-Assistent</strong><span><i /> {aiMode === "openai" ? "OpenAI verbunden" : aiMode === "demo" ? "Demo-Modus · Schlüssel nachrüstbar" : "Bereit für Änderungen"}</span></div></div>
+          <div className="assistant-head"><div className="ai-avatar"><OfmIcon name="leaf" size={18} /></div><div><strong>Routen-Assistent</strong><span><i /> {aiMode === "gemini" ? "Gemini verbunden" : aiMode === "openai" ? "OpenAI verbunden" : aiMode === "demo" ? "Demo-Modus · Schlüssel nachrüstbar" : "Bereit für Änderungen"}</span></div></div>
           <div className="messages">
             {messages.map((m, i) => <div key={i} className={`message ${m.role}`}>{m.text}{m.role === "ai" && i > 0 && <small>Route aktualisiert</small>}</div>)}
             {busy && <div className="message ai typing"><b /><b /><b /></div>}

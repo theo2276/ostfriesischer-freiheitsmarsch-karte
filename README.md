@@ -1,7 +1,7 @@
 # Ostfriesischer Freiheitsmarsch – Streckenkarte
 
 Interaktive Next.js-Streckenkarte mit geschütztem Adminbereich, editierbaren
-Knotenpunkten, Routenverwaltung, OpenAI-Assistent und Vercel-Blob-Speicherung.
+ Knotenpunkten, Routenverwaltung, Gemini- oder OpenAI-Assistent und Vercel-Blob-Speicherung.
 
 ## Lokale Entwicklung
 
@@ -25,6 +25,15 @@ mit dem Projekt verbunden sein. Vercel stellt danach
 - `BLOB_READ_WRITE_TOKEN`: wird von Vercel Blob gesetzt
 - `OPENAI_API_KEY`: optional für den KI-Assistenten
 - `OPENAI_MODEL`: optional, Standard ist `gpt-5.6-sol`
+- `GEMINI_API_KEY`: optional für den KI-Assistenten; hat Vorrang vor OpenAI
+- `GEMINI_MODEL`: optional, Standard ist `gemini-3.8-flash`
+
+Für die lokale Entwicklung `.env.example` nach `.env.local` kopieren und den
+Gemini-Schlüssel bei `GEMINI_API_KEY` eintragen. `.env.local` wird nicht ins
+Repository übernommen. Für die veröffentlichte Karte den Schlüssel zusätzlich
+in Vercel unter **Project Settings → Environment Variables** als
+`GEMINI_API_KEY` eintragen und danach neu bereitstellen. Den Schlüssel nie in
+eine Framer-Seite oder öffentlich sichtbaren Code einfügen.
 
 Ohne Blob-Token wird die Karte mit den offiziellen Standarddaten angezeigt.
 Speichernde Admin-Aktionen benötigen den verbundenen Blob-Speicher.
