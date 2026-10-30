@@ -26,7 +26,7 @@ mit dem Projekt verbunden sein. Vercel stellt danach
 - `OPENAI_API_KEY`: optional für den KI-Assistenten
 - `OPENAI_MODEL`: optional, Standard ist `gpt-5.6-sol`
 - `GEMINI_API_KEY`: optional für den KI-Assistenten; hat Vorrang vor OpenAI
-- `GEMINI_MODEL`: optional, Standard ist `gemini-3.8-flash`
+- `GEMINI_MODEL`: optional, Standard ist `gemini-3.1-flash-lite`
 
 Für die lokale Entwicklung `.env.example` nach `.env.local` kopieren und den
 Gemini-Schlüssel bei `GEMINI_API_KEY` eintragen. `.env.local` wird nicht ins

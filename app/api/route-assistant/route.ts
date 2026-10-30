@@ -26,12 +26,13 @@ Erfinde keine bereits ausgeführten Änderungen und verwende keine Markdown-Form
     })}\n\nNutzerwunsch: ${message}`;
     const provider = geminiKey ? "gemini" : "openai";
     const model = geminiKey
-      ? process.env.GEMINI_MODEL || "gemini-3.8-flash"
+      ? process.env.GEMINI_MODEL || "gemini-3.1-flash-lite"
       : process.env.OPENAI_MODEL || "gpt-5.6-sol";
     const response = await fetch(geminiKey
       ? `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`
       : "https://api.openai.com/v1/responses", {
       method: "POST",
+      signal: AbortSignal.timeout(20000),
       headers: geminiKey
         ? { "x-goog-api-key": geminiKey, "Content-Type": "application/json" }
         : { Authorization: `Bearer ${openaiKey}`, "Content-Type": "application/json" },
